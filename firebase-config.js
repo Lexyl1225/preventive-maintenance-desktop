@@ -3,14 +3,14 @@
 // Used for local development and as backup
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDJOuYk3sUoQkkqX4tH3e8P9Gh1kXBRJ8A",
-  authDomain: "preventive-maintenance-2b1b7.firebaseapp.com",
-  databaseURL: "https://preventive-maintenance-2b1b7-default-rtdb.asia-southeast1.firebasedatabase.app/",
-  projectId: "preventive-maintenance-2b1b7",
-  storageBucket: "preventive-maintenance-2b1b7.firebasestorage.app",
-  messagingSenderId: "781770447532",
-  appId: "1:781770447532:web:5f90c90bfcde2e2ca51d09",
-  measurementId: "G-P8QLRSSNXY"
+  apiKey: "your_api_key",
+  authDomain: "your_preventive-maintenance_domain.com",
+  databaseURL: "https://preventive-maintenance-your_database_.firebasedatabase.app/",
+  projectId: "your_project_id",
+  storageBucket: "your_storage_bucket_here",
+  messagingSenderId: "your_id_here",
+  appId: "place_your_app_id_here",
+  measurementId: "G-your_ID_HERE"
 };
 
 // Initialize Firebase
