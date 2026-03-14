@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="images/favicon.ico">
+  <title>Megger Test Viewer</title>
+  <style>
+    /* Soft, high-contrast viewer card and table for readability */
+    body{font-family:Arial,Helvetica,sans-serif;margin:0;color:#111;background:#f4f6f8}
+    .container{max-width:900px;margin:24px auto;padding:16px;background:#fbfcfd !important;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.06);color:#111 !important}
+    h2{margin-bottom:12px;color:#111 !important}
+    .toolbar{display:flex;gap:10px;margin-bottom:18px}
+    .btn{background:#0b78d1;color:#fff;border:0;padding:8px 14px;border-radius:4px;cursor:pointer;font-size:14px;font-weight:500}
+    .btn.secondary{background:#f3f4f6;color:#111;border:1px solid #d1d5db}
+    table{width:100%;border-collapse:collapse;margin-top:10px;background:transparent}
+    th,td{border:1px solid #e6e6e6;padding:8px;font-size:13px;text-align:left;color:#111}
+    th{background:#f3f4f6;color:#111;font-weight:700}
+    tr:hover{background:#fbfdff}
+    .empty{text-align:center;color:#666;padding:40px;font-size:15px}
+    /* Force overrides to protect against external theme CSS */
+    .container, .container *{color:#111 !important}
+    .container input, .container select, .container textarea{background:#fff !important;color:#111 !important;border-color:#d6d8db !important}
+    @media (max-width:700px){.container{padding:6px}.btn{padding:6px 8px;font-size:12px}th,td{padding:6px;font-size:11px}}
+    @media print{.toolbar,.btn{display:none}}
+  </style>
+  <link rel="stylesheet" href="hangar-theme.css">
+  <link rel="stylesheet" href="responsive.css">
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script src="firebase-config.js"></script>
+  <script src="auth-guard.js"></script>
+  <script src="db.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h2>Megger Test Files</h2>
+    <div class="toolbar">
+      <button class="btn" onclick="window.location.href='megger_test_form.php'">+ New Test</button>
+      <button class="btn secondary" onclick="location.reload()">Refresh List</button>
+    </div>
+    <div id="file-list"></div>
+    <div id="empty-list" class="empty" style="display:none">No saved megger test files found.</div>
+  </div>
+  <script>
+    const STORAGE_KEY = 'megger_test_files_v1';
+    let isAdminUser = false;
+    // Each file: {name, data, savedAt}
+    function normalizeFiles(arr){
+      if(!Array.isArray(arr)) return [];
+      return arr.map(item => {
+        // Many backends wrap the stored object; try common shapes
+        if(!item) return null;
+        if(item.name && item.data) return item;
+        if(item.data && item.data.name) return { name: item.data.name, data: item.data, savedAt: item.savedAt || item.data.createdAt || item.data.savedAt };
+        if(item.payload && item.payload.name) return { name: item.payload.name, data: item.payload, savedAt: item.savedAt || item.payload.createdAt };
+        if(item.doc && item.doc.data) return { name: item.doc.data.name || item.doc.id, data: item.doc.data, savedAt: item.doc.data.savedAt || item.doc.updatedAt };
+        // If it's already the data object (no wrapper), synthesize a name
+        if(item.rows || item.company) return { name: item.name || (item.referenceNo?item.referenceNo:'megger_'+(item.date||'unnamed')), data: item, savedAt: item.savedAt || item.createdAt };
+        return null;
+      }).filter(Boolean);
+    }
+
+    function loadFileList() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) {
+          // fallback to backup key if present
+          const backup = localStorage.getItem(STORAGE_KEY+"_backup");
+          if(backup) return normalizeFiles(JSON.parse(backup));
+          return [];
+        }
+        const arr = JSON.parse(raw);
+        return normalizeFiles(arr);
+      } catch(e) { console.error('Failed to load file list', e); return []; }
+    }
+    function saveFileList(arr) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+      try{ localStorage.setItem(STORAGE_KEY+"_backup", JSON.stringify(arr)); }catch(e){}
+    }
+    async function checkAdminRole() {
+      try {
+        if (typeof firebase === 'undefined' || !firebase.auth) {
+          console.warn('Firebase not initialized yet');
+          return false;
+        }
+        // Wait for auth state to settle - user should be set by now
+        return new Promise((resolve) => {
+          const unsubscribe = firebase.auth().onAuthStateChanged(async (user) => {
+            unsubscribe();
+            if (!user) {
+              console.warn('No user authenticated');
+              resolve(false);
+              return;
+            }
+            try {
+              const token = await user.getIdTokenResult(true); // Force refresh
+              isAdminUser = token.claims.admin === true;
+              console.log('Admin status:', isAdminUser, 'User:', user.email, 'Claims:', token.claims);
+              resolve(isAdminUser);
+            } catch(e) {
+              console.error('Token fetch failed:', e);
+              resolve(false);
+            }
+          });
+        });
+      } catch(e) {
+        console.error('Admin check failed:', e);
+        return false;
+      }
+    }
+    async function loadFromFirebase() {
+      // load from server if possible
+      try {
+        const arr = await DB.list(STORAGE_KEY);
+        if(Array.isArray(arr) && arr.length>0){
+          // normalize server result and store locally
+          const norm = normalizeFiles(arr);
+          if(norm.length>0) localStorage.setItem(STORAGE_KEY, JSON.stringify(norm));
+          return norm.length>0 ? norm : normalizeFiles(arr);
+        }
+      } catch(e){
+        console.warn('Server load failed, falling back to local',e);
+      }
+      return loadFileList();
+    }
+    function renderFileList() {
+      const files = loadFileList();
+      const listDiv = document.getElementById('file-list');
+      const emptyDiv = document.getElementById('empty-list');
+      if (!files || files.length === 0) {
+        listDiv.innerHTML = '';
+        emptyDiv.style.display = 'block';
+        return;
+      }
+      emptyDiv.style.display = 'none';
+      let html = '<table><thead><tr><th>File Name</th><th>Date Saved</th><th>Actions</th></tr></thead><tbody>';
+      files.forEach((f, idx) => {
+        let actionButtons = `<button class='btn secondary' onclick='viewFile(${idx})'>View</button> ` +
+          `<button class='btn secondary' onclick='printFile(${idx})'>Print</button> ` +
+          `<button class='btn' onclick='editFile(${idx})'>Edit</button>`;
+        if (isAdminUser) {
+          actionButtons += ` <button class='btn' style='background:#d9534f' onclick='deleteFile(${idx})'>Delete</button>`;
+        }
+        html += `<tr><td>${escapeHTML(f.name)}</td><td>${f.savedAt ? new Date(f.savedAt).toLocaleString() : ''}</td><td>` +
+          actionButtons +
+          `</td></tr>`;
+      });
+      html += '</tbody></table>';
+      listDiv.innerHTML = html;
+    }
+    async function renderFileListAsync() {
+      const files = await loadFromFirebase();
+      renderFileList();
+    }
+    function escapeHTML(s) {
+      return String(s).replace(/[&<>\"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    }
+    function viewFile(idx) {
+      const files = loadFileList();
+      const file = files[idx];
+      if(!file) return alert('File not found.');
+      let rec = file.data || file;
+      if(!rec) { console.warn('No data found on file', file); return alert('File has no data.'); }
+      if(typeof rec === 'string'){
+        try{ rec = JSON.parse(rec); }catch(e){ console.warn('Failed to parse stored JSON string', e); }
+      }
+      const w = window.open('', '_blank');
+      w.document.write(renderPrintable(rec));
+      w.document.close();
+    }
+    function printFile(idx) {
+      const files = loadFileList();
+      const file = files[idx];
+      if(!file) return alert('File not found.');
+      let rec = file.data || file;
+      if(!rec) { console.warn('No data found on file', file); return alert('File has no data.'); }
+      if(typeof rec === 'string'){
+        try{ rec = JSON.parse(rec); }catch(e){ console.warn('Failed to parse stored JSON string', e); }
+      }
+      const html = renderPrintable(rec);
+      const blob = new Blob([html],{type:'text/html'});
+      const url = URL.createObjectURL(blob);
+      const w = window.open(url, '_blank');
+      setTimeout(()=>URL.revokeObjectURL(url), 2000);
+    }
+    function editFile(idx) {
+      sessionStorage.setItem('megger_edit_idx', idx);
+      window.location.href = 'megger_test_form.php';
+    }
+    async function deleteFile(idx) {
+      if (!isAdminUser) {
+        alert('Only Admin users can delete files.');
+        return;
+      }
+      const files = loadFileList();
+      if (idx < 0 || idx >= files.length) {
+        alert('File not found.');
+        return;
+      }
+      const fileName = files[idx].name;
+      if (!confirm(`Delete file "${fileName}"? This action cannot be undone.`)) {
+        return;
+      }
+      files.splice(idx, 1);
+      saveFileList(files);
+      // sync to backend
+      try {
+          if(files[idx] && files[idx].id) {
+              await DB.delete(STORAGE_KEY, files[idx].id);
+          } else {
+              await fetch('api/bulk.php?collection='+encodeURIComponent(STORAGE_KEY), {
+                  method:'POST', headers:{'Content-Type':'application/json'},
+                  body: JSON.stringify(files)
+              });
+          }
+      } catch(e){ console.error('Server delete sync failed:', e); }
+      alert('File deleted.');
+      renderFileList();
+    }
+    function renderPrintable(r){
+      function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+      let rowsHtml = '';
+      (r.rows||[]).forEach((row,i)=>{
+        const bg = i%2===0 ? '' : " style='background:#f9fafb'";
+        const rmk = esc(row.remarks);
+        const rmkStyle = rmk==='Passed' ? 'color:#060;font-weight:700' : rmk==='Failed' ? 'color:#c00;font-weight:700' : '';
+        rowsHtml += `<tr${bg}><td>${esc(row.panel)}</td><td>${esc(row.branch)}</td><td>${esc(row['L1-L2'])}</td><td>${esc(row['L1-L3'])}</td><td>${esc(row['L2-L3'])}</td><td>${esc(row['L1-N'])}</td><td>${esc(row['L2-N'])}</td><td>${esc(row['L3-N'])}</td><td>${esc(row['L1-G'])}</td><td>${esc(row['L2-G'])}</td><td>${esc(row['L3-G'])}</td><td>${esc(row['N-G'])}</td><td>${esc(row.wire)}</td><td style='${rmkStyle}'>${rmk}</td></tr>`;
+      });
+      const html = `<!doctype html><html><head><meta charset='utf-8'><title>Megger Test Report</title>`+
+        `<style>`+
+        `@page{size:landscape;margin:12mm}`+
+        `body{font-family:'Segoe UI',Arial,Helvetica,sans-serif;margin:0;padding:24px;color:#111;background:#fff}`+
+        `.report-title{text-align:center;margin-bottom:18px;border-bottom:3px solid #0b78d1;padding-bottom:12px}`+
+        `.report-title h2{margin:0;font-size:20px;color:#0b78d1;letter-spacing:1px;text-transform:uppercase}`+
+        `.report-title .subtitle{font-size:12px;color:#666;margin-top:4px}`+
+        `.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;margin-bottom:16px;padding:12px;border:1px solid #ddd;border-radius:6px;background:#fafbfc}`+
+        `.info-grid .info-item{font-size:13px;padding:3px 0}`+
+        `.info-grid .info-item strong{color:#333;min-width:110px;display:inline-block}`+
+        `table{width:100%;border-collapse:collapse;margin-top:10px;font-size:11px}`+
+        `th{background:#0b78d1;color:#fff;padding:7px 5px;text-align:center;font-weight:600;font-size:11px;border:1px solid #0966b3}`+
+        `td{border:1px solid #ccc;padding:5px;text-align:center}`+
+        `.sign-section{display:flex;gap:24px;justify-content:space-between;margin-top:28px;page-break-inside:avoid}`+
+        `.sign-block{flex:1;text-align:center}`+
+        `.sign-block .line{border-bottom:1px solid #000;height:32px;margin-bottom:6px}`+
+        `.sign-block .name{font-weight:700;font-size:13px}`+
+        `.sign-block .role{font-size:11px;color:#555;margin-top:2px}`+
+        `.sign-block .date{font-size:11px;color:#555;margin-top:4px}`+
+        `.footer{text-align:center;margin-top:20px;font-size:10px;color:#999;border-top:1px solid #eee;padding-top:8px}`+
+        `</style></head><body>`+
+        `<div class='report-title'><h2>Megger Test Report / Insulation Resistance Test</h2><div class='subtitle'>${esc(r.subject)||'MEGGER TEST RESULT / INSULATION TEST'}</div></div>`+
+        `<div class='info-grid'>`+
+          `<div class='info-item'><strong>Company:</strong> ${esc(r.company)}</div>`+
+          `<div class='info-item'><strong>Reference No:</strong> ${esc(r.referenceNo)}</div>`+
+          `<div class='info-item'><strong>Location:</strong> ${esc(r.location)}</div>`+
+          `<div class='info-item'><strong>Date:</strong> ${esc(r.date)}</div>`+
+          `<div class='info-item'><strong>Test Voltage:</strong> ${esc(r.testVoltage)}</div>`+
+          `<div class='info-item'><strong>IR Test Type:</strong> ${esc(r.time)}</div>`+
+        `</div>`+
+        `<table><thead><tr><th>PANEL</th><th>BRANCH CKT #</th><th>L1-L2</th><th>L1-L3</th><th>L2-L3</th><th>L1-N</th><th>L2-N</th><th>L3-N</th><th>L1-G</th><th>L2-G</th><th>L3-G</th><th>N-G</th><th>WIRE</th><th>REMARKS</th></tr></thead><tbody>${rowsHtml}</tbody></table>`+
+        `<div class='sign-section'>`+
+          `<div class='sign-block'><div class='line'></div><div class='name'>${esc(r.conductedBy)||'&nbsp;'}</div><div class='role'>Conducted By</div><div class='date'>Date: ${esc(r.date)||''}</div></div>`+
+          `<div class='sign-block'><div class='line'></div><div class='name'>${esc(r.witnessedBy)||'&nbsp;'}</div><div class='role'>Witnessed By</div><div class='date'>Date: ${esc(r.date)||''}</div></div>`+
+          `<div class='sign-block'><div class='line'></div><div class='name'>${esc(r.verifiedBy)||'&nbsp;'}</div><div class='role'>Verified By</div><div class='date'>Date: ${esc(r.date)||''}</div></div>`+
+        `</div>`+
+        `<div class='footer'>This document is auto-generated by the EPM Megger Test System</div>`+
+        `<scr`+`ipt>window.print()</scr`+`ipt></body></html>`;
+      return html;
+    }
+    document.addEventListener('DOMContentLoaded', async function(){
+      // Check admin role (waits for auth state to settle)
+      const adminOk = await checkAdminRole();
+      console.log('Admin check completed:', adminOk);
+      await renderFileListAsync();
+    });
+  </script>
+  <script src="hangar-theme.js"></script>
+<script src="theme-loader.js"></script>
+</body>
+</html>

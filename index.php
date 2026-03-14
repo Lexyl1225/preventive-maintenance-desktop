@@ -1,0 +1,1135 @@
+<?php
+require_once __DIR__.'/db-config.php';
+?>
+<!doctype html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width,initial-scale=1" />
+	<link rel="icon" type="image/x-icon" href="images/favicon.ico">
+	<title>Electrical Preventive Maintenance</title>
+	<style>
+		:root{--bg:#f4f6f8;--card:#fff;--accent:#0b78d1;--muted:#6b7280}
+		*{box-sizing:border-box}
+		body{font-family:Segoe UI, system-ui, -apple-system, 'Helvetica Neue', Arial; margin:0; background-color:var(--bg); color:#111; -webkit-tap-highlight-color:transparent; touch-action:manipulation}
+		body{background-image:url('images/tw_bg.png');background-repeat:no-repeat;background-position:center;background-size:cover;background-attachment:scroll}
+		html{overscroll-behavior-y:none;-webkit-overflow-scrolling:touch}
+		.toast{position:fixed;right:18px;bottom:18px;background:rgba(17,24,39,0.95);color:#fff;padding:10px 14px;border-radius:8px;box-shadow:0 6px 18px rgba(3,10,22,0.2);opacity:0;transform:translateY(8px);transition:opacity .18s,transform .18s;z-index:1200}
+		.toast.show{opacity:1;transform:none}
+		.toast.error{background:#f44336;border-left:4px solid rgba(0,0,0,0.08)}
+		.toast.info{background:rgba(17,24,39,0.95)}
+		header{background: linear-gradient(90deg, rgba(8,59,102,0.55) 0%, rgba(11,120,209,0.55) 100%);color:#fff; padding:18px 22px; position:fixed;left:0;right:0;top:0;z-index:1000;backdrop-filter: blur(6px);-webkit-backdrop-filter: blur(6px);border-bottom: 1px solid rgba(255,255,255,0.06);box-shadow: 0 2px 8px rgba(3,10,22,0.12);will-change:transform}
+		header h1{margin:0;font-size:20px;letter-spacing:0.2px}
+		header p{margin:4px 0 0;color:rgba(255,255,255,0.9);font-size:13px}
+		.container{max-width:1100px;margin:22px auto;padding:12px}
+		/* Desktop mode: use full viewport width to maximize available space */
+		body.desktop-view .container{max-width:100%;width:100%;margin:12px auto;padding:16px 20px}
+		header .container{margin:0;display:flex;align-items:center;justify-content:space-between;gap:12px}
+		@media (max-width:600px){header .container{flex-direction:column;align-items:flex-start}}
+		main.container{padding-top:88px}
+		header.no-blur{backdrop-filter:none;-webkit-backdrop-filter:none;background:linear-gradient(90deg, rgba(8,59,102,0.85) 0%, rgba(11,120,209,0.85) 100%)}
+		.header-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+		@media (max-width:600px){
+			.header-controls{width:100%;margin-top:12px}
+			main.container{padding-top:180px}
+		}
+		.top-grid{display:grid;grid-template-columns:1fr;gap:18px}
+		@media (max-width:880px){.top-grid{grid-template-columns:1fr}}
+		.grid{display:grid;grid-template-columns: minmax(320px,440px) 1fr;gap:18px}
+		@media (max-width:880px){.grid{grid-template-columns:1fr}}
+		/* Force single-column layout when explicitly in mobile view */
+		body.mobile-view .grid{grid-template-columns:1fr!important}
+		body.mobile-view .top-grid{grid-template-columns:1fr!important}
+		.card{background:var(--card);padding:14px;border-radius:8px;box-shadow:0 1px 3px rgba(15,23,42,0.06)}
+		h2{margin:0 0 8px;font-size:16px}
+		label{display:block;font-size:13px;color:var(--muted);margin:8px 0 4px}
+		input[type=text],select,textarea,input[type=date]{width:100%;padding:8px;border:1px solid #e6e9ee;border-radius:6px}
+		textarea{min-height:72px;resize:vertical}
+		button{background:var(--accent);color:#fff;border:0;padding:8px 12px;border-radius:6px;cursor:pointer;font-size:13px}
+		button.secondary{background:#eef3fb;color:var(--accent);border:1px solid rgba(0, 0, 0, 0.12)}
+		button.small{font-size:12px;padding:6px 10px}
+		.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+		.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+		.empty{color:var(--muted);padding:18px;text-align:center}
+		.muted{color:var(--muted);font-size:13px}
+		table{width:100%;border-collapse:collapse;margin-top:12px}
+		th,td{padding:8px;border:1px solid #eef1f4;text-align:left;font-size:13px}
+		th{background:#f9fafb;font-weight:600}
+		.actions{white-space:nowrap}
+		.page-error{background:#fee;border:1px solid #faa;color:#c00;padding:10px;border-radius:6px;margin-bottom:12px;display:none}
+		
+		/* Mobile view styles */
+		body.mobile-view .container{max-width:100%;padding:8px}
+		body.mobile-view main.container{padding-top:120px}
+		body.mobile-view header{padding:12px}
+		body.mobile-view header h1{font-size:16px}
+		body.mobile-view header p{font-size:11px}
+		body.mobile-view .header-controls{flex-wrap:wrap;right:8px;top:8px;gap:4px}
+		body.mobile-view button.small{font-size:11px;padding:4px 8px}
+		body.mobile-view .top-grid{grid-template-columns:1fr!important}
+		body.mobile-view .card{padding:10px}
+		body.mobile-view h2{font-size:14px}
+		body.mobile-view label{font-size:12px}
+		body.mobile-view input,body.mobile-view select,body.mobile-view textarea{font-size:12px;padding:6px}
+		body.mobile-view table{font-size:11px;overflow-x:auto;display:block}
+		body.mobile-view th,body.mobile-view td{padding:4px;font-size:11px}
+		body.mobile-view .toolbar{gap:4px}
+		body.mobile-view .row{grid-template-columns:1fr;gap:8px}
+		
+		/* Desktop view override (force desktop layout) */
+		body.desktop-view .top-grid{grid-template-columns:1fr!important}
+		body.desktop-view .row{grid-template-columns:1fr 1fr!important}
+		
+		/* View toggle button */
+		#view-toggle{position:fixed;bottom:20px;right:20px;z-index:1200;background:var(--accent);color:#fff;border:0;padding:12px 16px;border-radius:50px;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.15);font-size:13px;font-weight:600}
+		#view-toggle:hover{box-shadow:0 6px 16px rgba(0,0,0,0.2);transform:translateY(-2px);transition:all 0.2s}
+		
+		/* Header toggle button */
+		#header-toggle{position:fixed;bottom:70px;right:20px;z-index:1200;background:#6b7280;color:#fff;border:0;padding:10px 14px;border-radius:50px;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.15);font-size:12px;font-weight:600}
+		#header-toggle:hover{box-shadow:0 6px 16px rgba(0,0,0,0.2);transform:translateY(-2px);transition:all 0.2s;background:#4b5563}
+
+		/* Mobile: enlarge and fix toggle buttons; keep them stacked at bottom-right */
+		body.mobile-view #view-toggle,
+		body.mobile-view #header-toggle{
+			position:fixed !important;
+			right:16px !important;
+			z-index:1600 !important;
+			border-radius:999px !important;
+			padding:14px 18px !important;
+			font-size:15px !important;
+			box-shadow:0 8px 24px rgba(0,0,0,0.22) !important;
+			touch-action:manipulation;
+			-webkit-tap-highlight-color: transparent;
+		}
+		body.mobile-view #header-toggle{bottom:86px !important}
+		body.mobile-view #view-toggle{bottom:18px !important}
+		/* slightly larger icon inside header toggle for mobile */
+		body.mobile-view #header-toggle img{width:20px;height:20px}
+		/* avoid transform animation causing perceived movement on touch */
+		body.mobile-view #view-toggle:hover, body.mobile-view #header-toggle:hover{transform:none}
+		
+		/* Hidden header state */
+		header{transition:transform 0.3s ease}
+		body.header-hidden header{transform:translateY(-100%)}
+		body.header-hidden main.container{padding-top:12px!important;transition:padding-top 0.3s ease}
+		
+		/* Welcome message */
+		.welcome-banner{background:linear-gradient(135deg, #eef8ff 0%, #e6f3ff 100%);padding:16px 20px;border-radius:8px;margin-bottom:18px;border-left:4px solid var(--accent);box-shadow:0 2px 6px rgba(11,120,209,0.08)}
+		.welcome-banner h3{margin:0 0 6px;color:var(--accent);font-size:18px;font-weight:600}
+		.welcome-banner p{margin:0;color:var(--muted);font-size:14px}
+		.welcome-banner .datetime{font-weight:500;color:#333;margin-top:4px}
+		body.mobile-view .welcome-banner{padding:12px 14px}
+		body.mobile-view .welcome-banner h3{font-size:15px}
+		body.mobile-view .welcome-banner p{font-size:12px}
+		
+		/* Mobile performance: disable backdrop-filter on header */
+		@media (max-width:1024px),(pointer:coarse){header{backdrop-filter:none!important;-webkit-backdrop-filter:none!important;background:linear-gradient(90deg, rgba(8,59,102,0.92) 0%, rgba(11,120,209,0.92) 100%)!important}}
+		@media print{.toolbar,button,header,.welcome-banner{display:none!important}main.container{padding-top:12px}}
+
+		/* Password confirmation modal */
+		#pw-confirm-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:3000;align-items:center;justify-content:center}
+		#pw-confirm-modal.show{display:flex}
+		#pw-confirm-box{background:var(--card);padding:24px 28px;border-radius:10px;width:340px;max-width:92vw;box-shadow:0 8px 32px rgba(0,0,0,0.22)}
+		#pw-confirm-box h3{margin:0 0 6px;font-size:16px;color:var(--accent)}
+		#pw-confirm-box p{margin:0 0 14px;font-size:13px;color:var(--muted)}
+		#pw-confirm-error{color:#c00;font-size:12px;margin-top:6px;display:none}
+		#pw-confirm-box .pw-actions{display:flex;gap:8px;margin-top:14px;justify-content:flex-end}
+	</style>
+	<link rel="stylesheet" href="hangar-theme.css">
+	<link rel="stylesheet" href="responsive.css">
+	<!-- Firebase SDK -->
+	<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+	<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+	<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+	<script src="firebase-config.js"></script>
+	<script src="auth-guard.js"></script>
+    <script src="db.js"></script>
+	<script>
+		function navigateTo(url){ window.location.href = url; }
+	</script>
+</head>
+<body>
+	<header>
+		<div class="container">
+			<div>
+				<h1>Electrical Preventive Maintenance</h1>
+				<p>Plan and record routine electrical maintenance tasks — panels, breakers, transformers, motors, grounding and more.</p>
+				<p>Use the options below to manage your records and access related forms.</p>
+			</div>
+			<div class="header-controls">
+				<div class="theme-dropdown-wrap" style="position:relative;display:inline-block">
+					<button id="theme-toggle-btn" class="small secondary" title="Change theme">🎨 Themes ▾</button>
+					<div id="theme-dropdown" class="theme-dropdown" style="display:none;position:absolute;top:110%;left:0;min-width:185px;background:rgba(10,18,35,.96);border:1px solid rgba(0,229,255,.2);border-radius:8px;box-shadow:0 8px 28px rgba(0,0,0,.45);z-index:2000;padding:4px 0;backdrop-filter:blur(12px)">
+						<div class="theme-option" data-theme="default" style="padding:9px 14px;cursor:pointer;font-size:13px;color:#b0d0e8;transition:background .15s">⚡ Default (Hangar)</div>
+						<div class="theme-option" data-theme="dark" style="padding:9px 14px;cursor:pointer;font-size:13px;color:#b0d0e8;transition:background .15s">🌑 Dark</div>
+						<div class="theme-option" data-theme="futuristic" style="padding:9px 14px;cursor:pointer;font-size:13px;color:#b0d0e8;transition:background .15s">🔮 Futuristic</div>
+						<div class="theme-option" data-theme="emerald" style="padding:9px 14px;cursor:pointer;font-size:13px;color:#b0d0e8;transition:background .15s">🌲 Emerald Forest</div>
+						<div class="theme-option" data-theme="midnight" style="padding:9px 14px;cursor:pointer;font-size:13px;color:#b0d0e8;transition:background .15s">🌌 Midnight Purple</div>
+						<div class="theme-option" data-theme="sunset" style="padding:9px 14px;cursor:pointer;font-size:13px;color:#b0d0e8;transition:background .15s">🌅 Sunset Minimal</div>
+					</div>
+				</div>
+				<button id="open-load-balancing" class="small" title="Open Load Balancing form" onclick="navigateTo('load_balancing_form.php')">Load balancing</button>
+				<button id="go-project-monitoring" class="small" title="Open Project Monitoring" onclick="navigateTo('https://tomsworld-project-tracker.web.app')">Go To Project Monitoring</button>
+				<button id="go-megger-form" class="small" title="Open Megger Test Form" onclick="navigateTo('megger_test_form.php')">Go To Megger Test Form</button>
+				<button id="go-pm-checklist" class="small" title="Open PM Checklist" onclick="navigateTo('pm_checklist.php')">PM Checklist</button>
+				<button id="go-store-list" class="small" title="Open Store List" onclick="navigateTo('store_list.php')">Store List</button>
+			</div>
+		</div>
+	</header>
+
+	<button id="view-toggle" title="Toggle between mobile and desktop view">📱 Mobile View</button>
+	<button id="header-toggle" title="Hide/Show header for full view"><img src="icon/open_eye.png" alt="toggle header" style="width:18px;height:18px;vertical-align:middle;margin-right:8px" /><span class="header-toggle-label">Hide Header</span></button>
+
+	<main class="container">
+		<div id="page-error" class="page-error" role="alert" aria-live="assertive"></div>
+		<div id="toast" class="toast" aria-hidden="true"></div>
+		
+		<!-- Welcome Message (moved into left column) -->
+		<!-- removed here and relocated into the left column for horizontal alignment -->
+		
+		<div class="grid">
+			<div class="top-grid">
+			<!-- Welcome Message moved into left column -->
+			<div id="welcome-banner" class="welcome-banner card" style="display:none">
+			    <h3 id="welcome-text">Welcome!</h3>
+			    <p class="datetime" id="current-datetime"></p>
+			</div>
+				<section class="card" id="record-form-card">
+					<h2>Add / Record Maintenance</h2>
+					<form id="record-form">
+						<label for="BranchCode">Branch Code</label>
+						<input id="BranchCode" type="text" placeholder="Enter Branch Code" />
+						<label for="BranchNameSelect">Branch Name</label>
+						<select id="BranchNameSelect" onchange="if(this.value==='__custom__'){document.getElementById('BranchNameCustom').style.display='';document.getElementById('BranchNameCustom').focus();}else{document.getElementById('BranchNameCustom').style.display='none';document.getElementById('BranchNameCustom').value='';}">
+							<option value="Funhouse">Funhouse</option>
+							<option value="TOMSWORLD">TOMSWORLD</option>
+							<option value="ADAMS QUEST">ADAMS QUEST</option>
+							<option value="JACKS ADVENTURE">JACKS ADVENTURE</option>
+							<option value="AUSTINLAND">AUSTINLAND</option>
+							<option value="__custom__">Custom Name</option>
+						</select>
+						<input id="BranchNameCustom" type="text" placeholder="Enter custom Branch Name" style="display:none;margin-top:4px" />
+						<input id="BranchName" type="hidden" />
+						<label for="location">Location</label>
+						<input id="location" type="text" placeholder="Location / Address" />
+						<label for="equipment">Equipment</label>
+						<select id="equipment" required>
+							<option value="Lighting">Lighting</option>
+							<option value="Panel Board">Panel Board</option>
+							<option value="Transformer">Transformer</option>
+							<option value="Motor">Motor</option>
+							<option value="UPS/Battery">UPS/Battery</option>
+							<option value="Cabling">Cabling</option>
+							<option value="Grounding">Grounding Cable</option>
+							<option value="Baseboard">Baseboard CO</option>
+							<option value="Air Conditioning">Air Conditioning unit Power Supply</option>
+							<option value="Switch">Switch</option>
+							<option value="Dome light">Dome light</option>
+							<option value="Emergency Light">Emergency Light</option>
+							<option value="Exit Sign">Exit Signage</option>
+							<option value="smd led">SMD LED 5050 Blue Lights</option>
+							<option value="smd led">SMD LED 5050 Warm White</option>
+							<option value="smart led">ADDRESSABLE SMART LED</option>
+							<option value="Control box">Control Box</option>
+							<option value="CCTV UTP Cable">CCTV CAT6 Cable</option>
+							<option value="Cove light">Cove light</option>
+							<option value="Flood light">Flood light</option>
+							<option value="Spot light">Spot light</option>
+							<option value="Recessed light">Recessed light</option>
+							<option value="Panel light">Panel light</option>
+							<option value="Fluorescent">Led Fluorescent tube</option>
+							<option value="Timer">24 hr Timer</option>
+							<option value="CCTV">CCTV DVR/NVR</option>
+							<option value="Circuit Breaker">Circuit Breaker</option>
+							<option value="Convenience Outlet">Convenience Outlet (CO)</option>
+							<option value="Telephone outlet">DATA and Telephone outlet</option>
+							<option value="Grounding busbar">Grounding busbar</option>
+							<option value="Neutral busbar">Neutral busbar</option>
+							<option value="Terminal Lugs">Terminal Lugs</option>
+							<option value="Entrance Signage">Entrance Signage</option>
+							<option value="Auxiliary Lighting">Auxiliary Lighting</option>
+							<option value="Magnetic Contactor">Magnetic Contactor</option>
+							<option value="Automatic Transfer Switch">Automatic Transfer Switch</option>
+							<option value="Manual Transfer Switch">Manual Transfer Switch</option>
+							<option value="Cooling Fan">Cooling Fan</option>
+							<option value="Exhaust Fan">Exhaust Fan</option>
+							<option value="Fire Alarm System">FDAS</option>
+							<option value="THHN Wires">THHN Wires</option>
+							<option value="TF Wire">TF Wire</option>
+							<option value="PVC Conduit">PVC Conduit</option>
+							<option value="EMT Conduit">EMT Conduit</option>
+							<option value="RSC Conduit">RSC Conduit</option>
+							<option value="Flexible Conduit">Flexible Metallic Conduit (FMC)</option>
+							<option value="Cable Tray">Cable Tray</option>
+							<option value="Cable Ladder">Cable Ladder</option>
+							<option value="Other">Other</option>
+						</select>
+
+						<label for="task">Task</label>
+						<input id="task" type="text" placeholder="Describe maintenance task" required />
+
+						<div class="row">
+							<div>
+								<label for="status">Status</label>
+								<select id="status">
+									<option>OK</option>
+									<option>Repaired</option>
+									<option>Requires Follow-up</option>
+									<option>Replaced</option>
+									<option>Not Applicable</option>
+									<option>Pending</option>
+									<option>Ongoing</option>
+									<option>Checked</option>
+									<option>Tested</option>
+									<option>Measured</option>
+									<option>Inspected</option>
+									<option>Serviced</option>
+									<option>Cleaned</option>
+									<option>Started</option>
+									<option>Completed</option>
+								</select>
+							</div>
+							<div>
+								<label for="date">Performed Date</label>
+								<input id="date" type="date" />
+							</div>
+						</div>
+
+						<label for="performedBySelect">Performed By</label>
+						<select id="performedBySelect" onchange="if(this.value==='__custom__'){document.getElementById('performedByCustom').style.display='';document.getElementById('performedByCustom').focus();}else{document.getElementById('performedByCustom').style.display='none';document.getElementById('performedByCustom').value='';}">
+							<option value="Johny Austria / Joseph Cristal">Johny Austria / Joseph Cristal Jr</option>
+							<option value="Petemar Solano / Jerico Simon">Petemar Solano / Jerico Simon</option>
+							<option value="Ronil Jardio / Chris Neri">Ronil Jardio / Chris Neri</option>
+							<option value="Joseph Cristal / Johny Austria">Joseph Cristal Jr / Johny Austria</option>
+							<option value="Jerico Simon / Petemar Solano">Jerico Simon / Petemar Solano</option>
+							<option value="Chris Neri / Ronil Jardio">Chris Neri / Ronil Jardio</option>
+							<option value="Joseph Cristal">Joseph Cristal Jr</option>
+							<option value="Jerico Simon">Jerico Simon</option>
+							<option value="Johny Austria">Johny Austria</option>
+							<option value="Petemar Solano">Petemar Solano</option>
+							<option value="Ronil Jardio">Ronil Jardio</option>
+							<option value="Chris Neri">Chris Neri</option>
+							<option value="__custom__">Custom Name</option>
+						</select>
+						<input id="performedByCustom" type="text" placeholder="Enter custom name" style="display:none;margin-top:4px" />
+						<input id="performedBy" type="hidden" />
+
+						<label for="verifiedBy">Verified By</label>
+						<input id="verifiedBy" type="text" placeholder="Verifier name / Officer in-charge" />
+
+						<label for="nextDue">Next Due (optional)</label>
+						<input id="nextDue" type="date" />
+
+						<label for="notes">Notes</label>
+						<textarea id="notes" placeholder="Observations, measurements, parts replaced..."></textarea>
+
+						<div style="margin-top:10px;display:flex;gap:8px">
+							<button id="add-record" type="button">Add Record</button>
+							<button id="reset-form" type="button" class="secondary">Reset Form</button>
+						</div>
+					</form>
+				</section>
+			</div>
+
+			<section class="card">
+				<div style="display:flex;justify-content:space-between;align-items:center">
+					<h2>Records</h2>
+					<div id="records-summary" style="font-size:13px;color:var(--muted)"></div>
+					<div class="toolbar">
+						<button id="export-csv" class="small">Export CSV</button>
+						<button id="print" class="small secondary">Print</button>
+						<button id="view-saved-records" class="small" onclick="navigateTo('pm_records.php')">View Saved Records</button>
+						<button id="open-uploads-gallery" class="small no-print" onclick="navigateTo('uploads_gallery.php')">Uploads Gallery</button>
+						<button id="go-p-chart" class="small" title="Open Performance Chart" onclick="navigateTo('top_performer_charts.php')">P Chart</button>
+						<button id="save" class="small">&lt;save&gt;</button>
+
+						<button id="clear-all" class="small secondary">Clear All</button>
+					</div>
+				</div>
+
+				<div id="records-area">
+					<table id="records-table" aria-live="polite">
+						<thead>
+							<tr>
+								<th>Branch Code</th>
+								<th>Branch Name</th>
+								<th>Location</th>
+								<th>Date</th>
+								<th>Equipment</th>
+								<th>Task</th>
+								<th>Status</th>
+								<th>Performed By</th>
+								<th>Verified By</th>
+								<th>Next Due</th>
+								<th>Notes</th>
+								<th>Actions</th>
+							</tr>
+						</thead>
+						<tbody id="records-body"></tbody>
+					</table>
+					<div id="empty" class="empty">No records yet — add a maintenance entry above.</div>
+				</div>
+			</section>
+		</div>
+
+		<p class="muted" style="margin-top:14px">Tip: Use the export feature to keep an offline audit log. Records persist in your browser's storage on this device.</p>
+	</main>
+
+	<!-- Password Confirmation Modal -->
+	<div id="pw-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="pw-confirm-title">
+		<div id="pw-confirm-box">
+			<h3 id="pw-confirm-title">🔐 Confirm Password</h3>
+			<p>Please enter your password to add this record.</p>
+			<label for="pw-confirm-input" style="display:block;font-size:13px;color:var(--muted);margin-bottom:4px">Password</label>
+			<input id="pw-confirm-input" type="password" placeholder="Enter your password" style="width:100%;padding:8px;border:1px solid #e6e9ee;border-radius:6px" autocomplete="current-password" />
+			<div id="pw-confirm-error"></div>
+			<div class="pw-actions">
+				<button id="pw-confirm-cancel" class="secondary small" type="button">Cancel</button>
+				<button id="pw-confirm-submit" type="button">Confirm</button>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		console.log('Script started');
+		const KEY = 'epm_records_v1';
+		console.log('KEY:', KEY);
+		const VIEW_MODE_KEY = 'epm_view_mode';	const DISPLAY_CLEARED_KEY = 'epm_display_cleared';		const form = document.getElementById('record-form');
+		console.log('form:', form);
+		const recordsBody = document.getElementById('records-body');
+		console.log('recordsBody:', recordsBody);
+		const emptyEl = document.getElementById('empty');
+		console.log('emptyEl:', emptyEl);
+		const viewToggleBtn = document.getElementById('view-toggle');
+
+		// Track if user is admin
+		let isAdminUser = false;
+		let currentEditingIndex = null;
+
+		// Initialize view mode
+		function initViewMode(){
+			const savedMode = localStorage.getItem(VIEW_MODE_KEY);
+			const isMobile = window.innerWidth <= 880;
+			const mode = savedMode || (isMobile ? 'mobile' : 'desktop');
+			setViewMode(mode);
+		}
+
+		function setViewMode(mode){
+			document.body.classList.remove('mobile-view', 'desktop-view');
+			document.body.classList.add(mode + '-view');
+			localStorage.setItem(VIEW_MODE_KEY, mode);
+			
+			if(viewToggleBtn){
+				if(mode === 'mobile'){
+					viewToggleBtn.textContent = '📱 Mobile View';
+					viewToggleBtn.title = 'Switch to desktop view';
+				}else{
+					viewToggleBtn.textContent = '🖥️ Desktop View';
+					viewToggleBtn.title = 'Switch to mobile view';
+				}
+			}
+		}
+
+		function toggleViewMode(){
+			const currentMode = document.body.classList.contains('mobile-view') ? 'mobile' : 'desktop';
+			const newMode = currentMode === 'mobile' ? 'desktop' : 'mobile';
+			setViewMode(newMode);
+		}
+
+		if(viewToggleBtn){
+			viewToggleBtn.addEventListener('click', toggleViewMode);
+		}
+
+		initViewMode();
+
+		// Header toggle functionality
+		const HEADER_HIDDEN_KEY = 'epm_header_hidden';
+		const headerToggleBtn = document.getElementById('header-toggle');
+
+		function initHeaderState(){
+			const isHidden = localStorage.getItem(HEADER_HIDDEN_KEY) === '1';
+			if(isHidden){
+				document.body.classList.add('header-hidden');
+				// set button state
+				if(headerToggleBtn) updateHeaderToggleButton(true);
+			} else {
+				// ensure button reflects visible header
+				if(headerToggleBtn) updateHeaderToggleButton(false);
+			}
+		}
+
+
+	// Update header toggle button image and label
+	function updateHeaderToggleButton(isHidden){
+	    if(!headerToggleBtn) return;
+	    const img = headerToggleBtn.querySelector('img');
+	    const label = headerToggleBtn.querySelector('.header-toggle-label');
+	    if(img) img.src = isHidden ? 'icon/open_eye.png' : 'icon/close_eye.png';
+	    if(label) label.textContent = isHidden ? 'Show Header' : 'Hide Header';
+	}
+
+		function toggleHeader(){
+			const isHidden = document.body.classList.toggle('header-hidden');
+			localStorage.setItem(HEADER_HIDDEN_KEY, isHidden ? '1' : '0');
+			if(headerToggleBtn) updateHeaderToggleButton(isHidden);
+		}
+
+		if(headerToggleBtn){
+			headerToggleBtn.addEventListener('click', toggleHeader);
+		}
+
+		initHeaderState();
+
+		// Display welcome message with authenticated user and date/time
+		function displayWelcomeMessage() {
+			const welcomeBanner = document.getElementById('welcome-banner');
+			const welcomeText = document.getElementById('welcome-text');
+			const datetimeEl = document.getElementById('current-datetime');
+			
+			if (!welcomeBanner || !welcomeText || !datetimeEl) return;
+			
+			// Get authenticated user
+			if (typeof AuthGuard !== 'undefined' && AuthGuard.isAuthenticated()) {
+				const user = AuthGuard.getCurrentUser();
+				const userName = user.displayName || user.email.split('@')[0] || 'User';
+				
+				// Format current date and time
+				const now = new Date();
+				const options = { 
+					weekday: 'long', 
+					year: 'numeric', 
+					month: 'long', 
+					day: 'numeric',
+					hour: '2-digit',
+					minute: '2-digit',
+					second: '2-digit'
+				};
+				const formattedDateTime = now.toLocaleString('en-US', options);
+				
+				// Update welcome message
+				welcomeText.innerHTML = `Welcome, <strong>${escapeHTML(userName)}</strong>! 👋`;
+				datetimeEl.textContent = `Today is ${formattedDateTime}`;
+				
+				// Show banner
+				welcomeBanner.style.display = 'block';
+			} else {
+				// Wait for auth to load
+				setTimeout(displayWelcomeMessage, 500);
+			}
+		}
+		
+		// Display welcome message after page load
+		setTimeout(displayWelcomeMessage, 1000);
+
+		// Check admin status
+		function checkAdminStatus() {
+			const firebaseUser = firebase.auth().currentUser;
+			
+			if (firebaseUser) {
+				console.log('Firebase user email:', firebaseUser.email);
+				
+				// Force refresh token to get latest claims
+				firebaseUser.getIdTokenResult(true).then(idTokenResult => {
+					console.log('Full token result:', idTokenResult);
+					console.log('Token claims:', idTokenResult.claims);
+					isAdminUser = idTokenResult.claims.admin === true;
+					console.log('Is admin:', isAdminUser);
+					console.log('Admin value type:', typeof idTokenResult.claims.admin);
+					
+					// Re-render to show/hide delete button
+					render();
+				}).catch(err => {
+					console.error('Error checking admin status:', err);
+					isAdminUser = false;
+					render();
+				});
+			} else {
+				console.log('Firebase user not ready, retrying...');
+				setTimeout(checkAdminStatus, 500);
+			}
+		}
+		
+		// Wait a bit longer for Firebase to initialize before checking admin status
+		setTimeout(checkAdminStatus, 2000);
+
+		function todayISO(){
+			const d = new Date();
+			return d.toISOString().slice(0,10);
+		}
+
+		document.getElementById('date').value = todayISO();
+
+		let currentPage = 0;
+
+		// Load records from Firestore or localStorage
+		async function load(){
+            return await DB.list(KEY);
+        }
+
+		// Save records to Firestore and localStorage
+		async function save(records){
+            await fetch('api/bulk.php?collection='+encodeURIComponent(KEY), {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body: JSON.stringify(records)
+            });
+        }
+
+		async function render(){		const isCleared = localStorage.getItem(DISPLAY_CLEARED_KEY) === '1';
+		if(isCleared){
+			recordsBody.innerHTML = '';
+			document.getElementById('records-table').style.display = 'none';
+			emptyEl.style.display = 'block';
+			emptyEl.textContent = 'Display cleared. Click "View Saved Records" to see all records.';
+			document.getElementById('records-summary').textContent = '';
+			return;
+		}			const records = await load();
+			recordsBody.innerHTML = '';
+			const total = records.length;
+			if(records.length === 0){
+				document.getElementById('records-table').style.display = 'none';
+				emptyEl.style.display = 'block';
+				document.getElementById('records-summary').textContent = '';
+				return;
+			}
+			document.getElementById('records-table').style.display = '';
+			emptyEl.style.display = 'none';
+			const maxShow = 15;
+			const offset = currentPage * maxShow;
+			const pageRecords = records.slice(offset, offset + maxShow);
+			const shown = pageRecords.length;
+			pageRecords.forEach((r, pageIdx)=>{
+				const idx = offset + pageIdx;
+				const tr = document.createElement('tr');
+				tr.innerHTML = `
+					<td>${escapeHTML(r.BranchCode||'')}</td>
+					<td>${escapeHTML(r.BranchName||'')}</td>
+					<td>${escapeHTML(r.location||'')}</td>
+					<td>${escapeHTML(r.date||'')}</td>
+					<td>${escapeHTML(r.equipment||'')}</td>
+					<td>${escapeHTML(r.task||'')}</td>
+					<td>${escapeHTML(r.status||'')}</td>
+					<td>${escapeHTML(r.performedBy||'')}</td>
+					<td>${escapeHTML(r.verifiedBy||'')}</td>
+					<td>${escapeHTML(r.nextDue||'')}</td>
+					<td>${escapeHTML(r.notes||'')}</td>
+						<td class="actions">
+							<button data-idx="${idx}" class="small" onclick="editRecord(${idx})" title="Edit this record">✏️ Edit</button>
+							<button data-idx="${idx}" class="small" onclick="uploadFiles(${idx})" title="Upload images/videos for this record">📤 Upload</button>
+							${isAdminUser ? `<button data-idx="${idx}" class="small" onclick="deleteRecord(${idx})" title="Delete this record">Delete</button>` : ''}
+							<span id="upload-status-${idx}" style="display:inline-block;margin-left:6px"></span>
+						</td>
+				`;
+				recordsBody.appendChild(tr);
+			});
+			const summaryEl = document.getElementById('records-summary');
+			if(summaryEl){
+				summaryEl.textContent = `Showing ${offset + 1}–${offset + shown} of ${total} record(s)`;
+				if(total > maxShow){
+					const totalPages = Math.ceil(total / maxShow);
+					if(currentPage > 0){
+						const sep1 = document.createTextNode(' — ');
+						const prevBtn = document.createElement('button');
+						prevBtn.id = 'prev-page-inline';
+						prevBtn.style.fontSize = '12px';
+						prevBtn.style.marginLeft = '8px';
+						prevBtn.textContent = 'Previous Page';
+						prevBtn.addEventListener('click', async ()=>{
+							currentPage = currentPage - 1;
+							await render();
+						});
+						summaryEl.appendChild(sep1);
+						summaryEl.appendChild(prevBtn);
+					}
+					if(currentPage < totalPages - 1){
+						const sep2 = document.createTextNode(' — ');
+						const nextBtn = document.createElement('button');
+						nextBtn.id = 'show-all-inline';
+						nextBtn.style.fontSize = '12px';
+						nextBtn.style.marginLeft = '8px';
+						nextBtn.textContent = 'Next Page';
+						nextBtn.addEventListener('click', async ()=>{
+							currentPage = currentPage + 1;
+							await render();
+						});
+						summaryEl.appendChild(sep2);
+						summaryEl.appendChild(nextBtn);
+					}
+				}
+			}
+		}
+
+		function escapeHTML(s){
+			return String(s).replace(/[&<>\\"]/g, c=>({
+				'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"
+			})[c]);
+		}
+
+		async function addRecordFromForm(){
+			const rec = {
+				BranchCode: document.getElementById('BranchCode').value.trim(),
+				BranchName: (document.getElementById('BranchNameSelect').value==='__custom__' ? document.getElementById('BranchNameCustom').value.trim() : document.getElementById('BranchNameSelect').value),
+				location: document.getElementById('location').value.trim(),
+				equipment: document.getElementById('equipment').value,
+				task: document.getElementById('task').value.trim(),
+				status: document.getElementById('status').value,
+				date: document.getElementById('date').value || todayISO(),
+				performedBy: (document.getElementById('performedBySelect').value==='__custom__' ? document.getElementById('performedByCustom').value.trim() : document.getElementById('performedBySelect').value),
+				verifiedBy: document.getElementById('verifiedBy').value.trim(),
+				nextDue: document.getElementById('nextDue').value || '',
+				notes: document.getElementById('notes').value.trim()
+			};
+			if(!rec.task){ alert('Please provide a task description.'); return; }		
+			
+			localStorage.removeItem(DISPLAY_CLEARED_KEY);
+			const records = await load();
+			
+			// If editing, update the existing record (preserve id for upload links)
+			if(currentEditingIndex !== null) {
+				const existingId = records[currentEditingIndex].id;
+				records[currentEditingIndex] = rec;
+				if(existingId !== undefined) rec.id = existingId;
+				showToast('✓ Record updated successfully!', 2000, 'info');
+				currentEditingIndex = null;
+				document.getElementById('add-record').textContent = '➕ Add Record';
+			} else {
+				// Otherwise add new record
+				records.unshift(rec);
+				showToast('✓ Record added successfully!', 2000, 'info');
+			}
+			
+			await save(records);
+			currentPage = 0;
+			await render();
+			form.reset();
+			document.getElementById('date').value = todayISO();
+		}
+
+		async function deleteRecord(i){
+			const records = await load();
+			if(i<0 || i>=records.length) return;
+			if(!confirm('Delete this record?')) return;
+			records.splice(i,1);
+			await save(records); currentPage = 0; await render();
+		}
+
+		async function editRecord(i){
+			const records = await load();
+			if(i<0 || i>=records.length) return;
+			const rec = records[i];
+			
+			// Fill form with record data
+			document.getElementById('BranchCode').value = rec.BranchCode || '';
+			// Set BranchName dropdown or custom input
+			(function(){
+				const sel=document.getElementById('BranchNameSelect'),ci=document.getElementById('BranchNameCustom'),v=rec.BranchName||'';
+				const opts=[...sel.options].map(o=>o.value);
+				if(opts.includes(v)&&v!=='__custom__'){sel.value=v;ci.style.display='none';ci.value='';}
+				else{sel.value='__custom__';ci.style.display='';ci.value=v;}
+			})();
+			document.getElementById('location').value = rec.location || '';
+			document.getElementById('equipment').value = rec.equipment || '';
+			document.getElementById('task').value = rec.task || '';
+			document.getElementById('status').value = rec.status || '';
+			document.getElementById('date').value = rec.date || '';
+			// Set performedBy dropdown or custom input
+			(function(){
+				const sel=document.getElementById('performedBySelect'),ci=document.getElementById('performedByCustom'),v=rec.performedBy||'';
+				const opts=[...sel.options].map(o=>o.value);
+				if(opts.includes(v)&&v!=='__custom__'){sel.value=v;ci.style.display='none';ci.value='';}
+				else{sel.value='__custom__';ci.style.display='';ci.value=v;}
+			})();
+			document.getElementById('verifiedBy').value = rec.verifiedBy || '';
+			document.getElementById('nextDue').value = rec.nextDue || '';
+			document.getElementById('notes').value = rec.notes || '';
+			
+			// Set editing state
+			currentEditingIndex = i;
+			
+			// Change button text
+			const addBtn = document.getElementById('add-record');
+			const originalText = addBtn.textContent;
+			addBtn.textContent = '💾 Update Record';
+			
+			// Highlight record being edited
+			const allRows = document.querySelectorAll('#records-body tr');
+			allRows.forEach(row => row.style.backgroundColor = '');
+			if(allRows[i]) allRows[i].style.backgroundColor = '#fef3c7';
+			
+			// Scroll to form
+			document.getElementById('record-form-card').scrollIntoView({ behavior: 'smooth' });
+			
+			showToast('📝 Editing record - click Update Record to save', 3000, 'info');
+		}
+
+	// Upload files (images / videos) for a specific record index
+	window.uploadControllers = window.uploadControllers || {};
+	async function uploadFiles(i){
+		const records = await load();
+		if(i<0 || i>=records.length) return;
+		const rec = records[i] || {};
+
+		// create hidden file input
+		const input = document.createElement('input');
+		input.type = 'file';
+		input.multiple = true;
+		input.accept = 'image/*,video/*';
+		input.style.display = 'none';
+		document.body.appendChild(input);
+
+		input.addEventListener('change', async function onFiles(){
+			const files = Array.from(input.files || []);
+			if(files.length === 0){ input.remove(); return; }
+
+			// fetch server upload limits and prevent too-large uploads client-side
+			let limits = null;
+			try{
+				limits = await fetch('api/upload_limits.php').then(r=>r.ok? r.json() : null);
+			}catch(e){ limits = null; }
+
+			const maxBytes = limits && limits.upload_max_filesize_bytes ? Math.min(limits.upload_max_filesize_bytes, limits.post_max_size_bytes) : null;
+			if(maxBytes){
+				const tooBig = files.find(f => f.size > maxBytes);
+				if(tooBig){
+					const mb = (maxBytes / (1024*1024)).toFixed(1);
+					alert('One or more files exceed server upload limit ('+mb+' MB). Please pick smaller files or increase server limits.');
+					input.remove();
+					return;
+				}
+			}
+
+			// modal container
+			const modal = document.createElement('div');
+			modal.style.position = 'fixed'; modal.style.left = '0'; modal.style.top = '0'; modal.style.right = '0'; modal.style.bottom = '0';
+			modal.style.background = 'rgba(0,0,0,0.5)'; modal.style.display = 'flex'; modal.style.alignItems = 'center'; modal.style.justifyContent = 'center';
+			modal.style.zIndex = 2000;
+
+			const box = document.createElement('div');
+			box.style.background = '#fff'; box.style.padding = '14px'; box.style.borderRadius = '8px'; box.style.width = '420px'; box.style.maxHeight = '70%'; box.style.overflow = 'auto';
+			const title = document.createElement('div'); title.textContent = `Uploading ${files.length} file(s)`; title.style.fontWeight = '600'; title.style.marginBottom = '8px';
+			box.appendChild(title);
+
+			const list = document.createElement('div'); box.appendChild(list);
+
+			const closeBtn = document.createElement('button'); closeBtn.textContent = 'Close'; closeBtn.className = 'small secondary'; closeBtn.style.marginTop = '10px';
+			closeBtn.addEventListener('click', ()=>{ modal.remove(); });
+			box.appendChild(closeBtn);
+			modal.appendChild(box);
+			document.body.appendChild(modal);
+
+			files.forEach((file, idxFile)=>{
+				const row = document.createElement('div'); row.style.display='flex'; row.style.alignItems='center'; row.style.gap='8px'; row.style.marginBottom='8px';
+				const name = document.createElement('div'); name.textContent = file.name + ' (' + Math.round(file.size/1024) + ' KB)'; name.style.flex='1'; name.style.fontSize='13px';
+				const prog = document.createElement('progress'); prog.max = 100; prog.value = 0; prog.style.width = '120px';
+				const cancel = document.createElement('button'); cancel.textContent = 'Cancel'; cancel.className='small secondary';
+				row.appendChild(name); row.appendChild(prog); row.appendChild(cancel);
+				list.appendChild(row);
+
+				const fd = new FormData();
+				fd.append('file', file);
+				fd.append('record_meta', JSON.stringify({index:i, BranchCode: rec.BranchCode||'', date: rec.date||''}));
+				if(rec && rec.id) fd.append('record_id', String(rec.id));
+
+				const xhr = new XMLHttpRequest();
+				xhr.open('POST', 'api/upload.php');
+				xhr.upload.onprogress = function(e){ if(e.lengthComputable) prog.value = Math.round((e.loaded / e.total) * 100); };
+				xhr.onload = function(){
+					if(xhr.status === 200){
+						try{ const j = JSON.parse(xhr.responseText);
+							if(j && j.ok){ name.textContent += ' — Uploaded'; prog.value = 100; }
+							else { name.textContent += ' — Failed'; }
+						}catch(e){ name.textContent += ' — Server error'; }
+					} else { name.textContent += ' — Failed'; }
+				};
+				xhr.onerror = function(){ name.textContent += ' — Error'; };
+				cancel.addEventListener('click', ()=>{ xhr.abort(); row.remove(); });
+				xhr.send(fd);
+				// store controller so user could cancel later (not used beyond scope)
+				window.uploadControllers['u'+Date.now()+idxFile] = xhr;
+			});
+
+			input.remove();
+		});
+
+		input.click();
+	}
+
+		async function exportCSV(){
+			const records = await load();
+			if(records.length===0){ alert('No records to export.'); return; }
+			const header = ['Date','Equipment','Task','Status','PerformedBy','NextDue','Notes'];
+			const rows = [header.join(',')];
+			for(const r of records){
+				const values = header.map(h=>quoteCSV((r[h.toLowerCase()]||'')));
+				rows.push(values.join(','));
+			}
+			const blob = new Blob([rows.join('\n')],{type:'text/csv;charset=utf-8;'});
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement('a');
+			a.href = url; a.download = 'epm_records.csv'; document.body.appendChild(a); a.click(); a.remove();
+			URL.revokeObjectURL(url);
+		}
+
+		function quoteCSV(v){
+			if(v==null) v='';
+			v = String(v).replace(/"/g,'""');
+			if(/[\",\n]/.test(v)) v='"'+v+'"';
+			return v;
+		}
+
+		function clearAll(){
+			if(!confirm('Clear the displayed records from this page view? (This will not delete saved records)')) return;
+			localStorage.setItem(DISPLAY_CLEARED_KEY, '1');
+			recordsBody.innerHTML = '';
+			document.getElementById('records-table').style.display = 'none';
+			emptyEl.style.display = 'block';
+			document.getElementById('records-summary').textContent = '';
+			showToast('Cleared page display. Records are still saved and can be viewed in "View Saved Records".', 3000, 'info');
+		}
+		
+		async function appendToBackupFile(){
+			const records = await load();
+			if(!records || records.length===0){ alert('No records to save.'); return; }
+
+			function stableStringify(obj){
+				if(obj === null || typeof obj !== 'object') return JSON.stringify(obj);
+				if(Array.isArray(obj)) return '[' + obj.map(stableStringify).join(',') + ']';
+				const keys = Object.keys(obj).sort();
+				return '{' + keys.map(k => JSON.stringify(k) + ':' + stableStringify(obj[k])).join(',') + '}';
+			}
+
+			function mergeArrays(existing, incoming){
+				const seen = new Set(existing.map(r=>stableStringify(r)));
+				const toAdd = [];
+				for(const r of incoming){ const s = stableStringify(r); if(!seen.has(s)){ toAdd.push(r); seen.add(s); } }
+				return existing.concat(toAdd);
+			}
+
+			try{
+				const base = (function(){ try{ return location.href.replace(/[^\/]*$/,''); }catch(e){ return './'; } })();
+				const url = base + 'save_backup';
+				const resp = await fetch(url, { method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify(records) });
+				if(resp.ok){
+					alert('Saved backup to server: pm_records_backup/pm_records_backup.json');
+					return;
+				}
+			}catch(e){ console.warn('Server save failed or not available', e); }
+
+			if(window.showDirectoryPicker){
+				try{
+					const dir = await window.showDirectoryPicker();
+					let fileHandle = await dir.getFileHandle('pm_records_backup.json', { create: true });
+					let existing = [];
+					try{ const f = await fileHandle.getFile(); const txt = await f.text(); existing = txt ? JSON.parse(txt) : []; if(!Array.isArray(existing)) existing = [];}catch(e){ existing = []; }
+					const merged = mergeArrays(existing, records);
+					const writable = await fileHandle.createWritable();
+					await writable.write(JSON.stringify(merged, null, 2));
+					await writable.close();
+					const added = merged.length - existing.length;
+					alert('Appended ' + records.length + ' record(s). ' + added + ' new record(s) added to pm_records_backup.json.');
+					return;
+				}catch(e){ console.warn('Directory picker failed or cancelled', e); }
+			}
+
+			if(window.showSaveFilePicker){
+				try{
+					const opts = { suggestedName: 'pm_records_backup.json', types: [{ description: 'JSON', accept: {'application/json':['.json']} }] };
+					const fh = await window.showSaveFilePicker(opts);
+					let existing = [];
+					try{ const f = await fh.getFile(); const txt = await f.text(); existing = txt ? JSON.parse(txt) : []; if(!Array.isArray(existing)) existing=[];}catch(e){ existing = []; }
+					const merged = mergeArrays(existing, records);
+					const w = await fh.createWritable(); await w.write(JSON.stringify(merged, null, 2)); await w.close();
+					const added = merged.length - existing.length;
+					alert('Saved pm_records_backup.json — ' + added + ' new records added.');
+					return;
+				}catch(e){ console.warn('Save file picker failed', e); }
+			}
+
+			try{
+				const base = (function(){ try{ return location.href.replace(/[^\/]*$/,''); }catch(e){ return './'; } })();
+				let existing = [];
+				try{ const resp = await fetch(base + 'pm_records_backup/pm_records_backup.json'); if(resp.ok){ const j = await resp.json(); if(Array.isArray(j)) existing = j; } }catch(e){}
+				const merged = mergeArrays(existing, records);
+				const blob = new Blob([JSON.stringify(merged, null, 2)],{type:'application/json'});
+				const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'pm_records_backup.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(a.href);
+				alert('Downloaded merged pm_records_backup.json. Please move it into the pm_records_backup folder on the server.');
+			}catch(e){ alert('Failed to save backup file: ' + e); }
+		}
+
+		document.getElementById('save').addEventListener('click', ()=>{ appendToBackupFile(); });
+
+		async function downloadBackupForOneDrive(){
+			const records = await load();
+			if(!records || records.length===0){ alert('No records to download.'); return; }
+			const now = new Date();
+			const timestamp = now.toISOString().slice(0,19).replace(/:/g,'-');
+			const filename = `epm_backup_${timestamp}.json`;
+			const blob = new Blob([JSON.stringify(records, null, 2)], {type:'application/json'});
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement('a');
+			a.href = url;
+			a.download = filename;
+			document.body.appendChild(a);
+			a.click();
+			a.remove();
+			URL.revokeObjectURL(url);
+			showToast(`Downloaded ${filename}. Upload it to your OneDrive folder.`, 3000, 'info');
+		}
+
+
+
+		// navigateTo is defined in a separate <script> block in <head> and
+		// bound via inline onclick on each button — no addEventListener needed.
+		function showToast(msg, ms = 1800, type = 'info'){
+			const t = document.getElementById('toast');
+			if(!t) return;
+			t.classList.remove('error','info');
+			if(type === 'error') t.classList.add('error'); else t.classList.add('info');
+			t.textContent = msg; t.setAttribute('aria-hidden','false');
+			t.classList.add('show');
+			clearTimeout(t._timeout);
+			t._timeout = setTimeout(()=>{ t.classList.remove('show'); t.setAttribute('aria-hidden','true'); }, ms);
+		}
+
+		function promptPasswordAndAdd(){
+			const modal = document.getElementById('pw-confirm-modal');
+			const input = document.getElementById('pw-confirm-input');
+			const errorEl = document.getElementById('pw-confirm-error');
+			input.value = '';
+			errorEl.style.display = 'none';
+			errorEl.textContent = '';
+			modal.classList.add('show');
+			setTimeout(()=>input.focus(), 50);
+		}
+
+		document.getElementById('pw-confirm-cancel').addEventListener('click', function(){
+			document.getElementById('pw-confirm-modal').classList.remove('show');
+			document.getElementById('pw-confirm-input').value = '';
+		});
+
+		document.getElementById('pw-confirm-modal').addEventListener('click', function(e){
+			if(e.target === this){
+				this.classList.remove('show');
+				document.getElementById('pw-confirm-input').value = '';
+			}
+		});
+
+		document.getElementById('pw-confirm-input').addEventListener('keydown', function(e){
+			if(e.key === 'Enter') document.getElementById('pw-confirm-submit').click();
+			if(e.key === 'Escape') document.getElementById('pw-confirm-cancel').click();
+		});
+
+		document.getElementById('pw-confirm-submit').addEventListener('click', async function(){
+			const input = document.getElementById('pw-confirm-input');
+			const errorEl = document.getElementById('pw-confirm-error');
+			const submitBtn = document.getElementById('pw-confirm-submit');
+			const password = input.value;
+
+			if(!password){
+				errorEl.textContent = 'Please enter your password.';
+				errorEl.style.display = 'block';
+				input.focus();
+				return;
+			}
+
+			submitBtn.disabled = true;
+			submitBtn.textContent = 'Verifying...';
+			errorEl.style.display = 'none';
+
+			try {
+				const user = firebase.auth().currentUser;
+				if(!user || !user.email){
+					errorEl.textContent = 'Authentication error. Please refresh and try again.';
+					errorEl.style.display = 'block';
+					return;
+				}
+				const credential = firebase.auth.EmailAuthProvider.credential(user.email, password);
+				await user.reauthenticateWithCredential(credential);
+				// Password verified — close modal and add record
+				document.getElementById('pw-confirm-modal').classList.remove('show');
+				input.value = '';
+				await addRecordFromForm();
+			} catch(err) {
+				console.error('Reauthentication failed:', err);
+				errorEl.textContent = 'Incorrect password. Please try again.';
+				errorEl.style.display = 'block';
+				input.value = '';
+				input.focus();
+			} finally {
+				submitBtn.disabled = false;
+				submitBtn.textContent = 'Confirm';
+			}
+		});
+
+		document.getElementById('add-record').addEventListener('click', promptPasswordAndAdd);
+		document.getElementById('reset-form').addEventListener('click', ()=>{ 
+			form.reset(); 
+			document.getElementById('date').value = todayISO();
+			// Clear editing state
+			currentEditingIndex = null;
+			document.getElementById('add-record').textContent = '➕ Add Record';
+			// Remove highlight from records
+			document.querySelectorAll('#records-body tr').forEach(row => row.style.backgroundColor = '');
+		});
+		document.getElementById('export-csv').addEventListener('click', exportCSV);
+		document.getElementById('print').addEventListener('click', ()=>{ window.print(); });
+		// view-saved-records and open-uploads-gallery use inline onclick with navigateTo()
+		document.getElementById('clear-all').addEventListener('click', clearAll);
+
+		/* ── THEME SWITCHER ─────────────────────────────────── */
+		const THEME_KEY = 'epm_selected_theme';
+		const themeBtn = document.getElementById('theme-toggle-btn');
+		const themeDropdown = document.getElementById('theme-dropdown');
+
+		function applyTheme(name){
+			document.body.setAttribute('data-theme', name === 'default' ? '' : name);
+			if(name === 'default') document.body.removeAttribute('data-theme');
+			try{ localStorage.setItem(THEME_KEY, name); }catch(e){}
+			// highlight active
+			if(themeDropdown){
+				themeDropdown.querySelectorAll('.theme-option').forEach(function(opt){
+					opt.style.background = opt.getAttribute('data-theme') === name ? 'rgba(0,229,255,.15)' : '';
+				});
+			}
+		}
+
+		// Restore saved theme
+		try{ var savedTheme = localStorage.getItem(THEME_KEY) || 'default'; applyTheme(savedTheme); }catch(e){ applyTheme('default'); }
+
+		if(themeBtn && themeDropdown){
+			themeBtn.addEventListener('click', function(e){
+				e.stopPropagation();
+				themeDropdown.style.display = themeDropdown.style.display === 'none' ? 'block' : 'none';
+			});
+			themeDropdown.querySelectorAll('.theme-option').forEach(function(opt){
+				opt.addEventListener('mouseenter', function(){ this.style.background = 'rgba(0,229,255,.12)'; });
+				opt.addEventListener('mouseleave', function(){ var active = localStorage.getItem(THEME_KEY)||'default'; this.style.background = this.getAttribute('data-theme')===active ? 'rgba(0,229,255,.15)' : ''; });
+				opt.addEventListener('click', function(){
+					applyTheme(this.getAttribute('data-theme'));
+					themeDropdown.style.display = 'none';
+				});
+			});
+			document.addEventListener('click', function(){ themeDropdown.style.display = 'none'; });
+		}
+
+		function showPageError(msg){
+			const el = document.getElementById('page-error');
+			if(el){ el.textContent = msg; el.style.display = 'block'; }
+			console.error(msg);
+		}
+
+		window.addEventListener('error', (ev)=>{
+			try{ showPageError(ev.message + ' — ' + (ev.filename||'') + ':' + (ev.lineno||'') ); }catch(e){console.error(e)}
+		});
+
+		window.addEventListener('unhandledrejection', (ev)=>{
+			try{ showPageError('Unhandled Promise rejection: ' + (ev.reason && ev.reason.message ? ev.reason.message : String(ev.reason))); }catch(e){console.error(e)}
+		});
+
+		window.deleteRecord = deleteRecord;
+		render();
+	</script>
+	<script src="hangar-theme.js"></script>
+</body>
+</html>
+

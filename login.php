@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="images/favicon.ico">
+  <title>Login - Electrical Preventive Maintenance</title>
+  <style>
+    :root{--bg:#f4f6f8;--card:#fff;--accent:#0b78d1;--muted:#6b7280}
+    *{box-sizing:border-box}
+    body{font-family:Segoe UI, system-ui, -apple-system, 'Helvetica Neue', Arial; margin:0; background:linear-gradient(135deg, #083b66 0%, #0b78d1 100%);color:#111;min-height:100vh;display:flex;align-items:center;justify-content:center}
+    .login-container{max-width:400px;width:100%;padding:20px}
+    .login-card{background:var(--card);padding:40px 30px;border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,0.2)}
+    .logo-section{text-align:center;margin-bottom:30px}
+    .logo-section h1{margin:0;font-size:24px;color:var(--accent);font-weight:700}
+    .logo-section p{margin:8px 0 0;color:var(--muted);font-size:14px}
+    .form-group{margin-bottom:20px}
+    .form-group label{display:block;font-size:13px;color:#333;margin-bottom:6px;font-weight:600}
+    .form-group input{width:100%;padding:12px;border:1px solid #e6e9ee;border-radius:8px;font-size:14px;transition:all 0.2s}
+    .form-group input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(11,120,209,0.1)}
+    .btn-primary{width:100%;background:var(--accent);color:#fff;border:0;padding:12px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;transition:all 0.2s}
+    .btn-primary:hover{background:#0a6bbf;transform:translateY(-1px);box-shadow:0 4px 12px rgba(11,120,209,0.3)}
+    .btn-primary:active{transform:translateY(0)}
+    .btn-primary:disabled{background:#ccc;cursor:not-allowed;transform:none}
+    .divider{text-align:center;margin:24px 0;color:var(--muted);font-size:13px;position:relative}
+    .divider::before,.divider::after{content:'';position:absolute;top:50%;width:40%;height:1px;background:#e6e9ee}
+    .divider::before{left:0}
+    .divider::after{right:0}
+    .toggle-form{text-align:center;margin-top:20px;font-size:13px;color:var(--muted)}
+    .toggle-form a{color:var(--accent);text-decoration:none;font-weight:600;cursor:pointer}
+    .toggle-form a:hover{text-decoration:underline}
+    .error-msg{background:#fee;border:1px solid #faa;color:#c00;padding:10px;border-radius:6px;margin-bottom:15px;font-size:13px;display:none}
+    .success-msg{background:#efe;border:1px solid #afa;color:#060;padding:10px;border-radius:6px;margin-bottom:15px;font-size:13px;display:none}
+    .password-toggle{position:relative}
+    .password-toggle input{padding-right:40px}
+    .password-toggle .toggle-btn{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:0;cursor:pointer;font-size:18px;padding:5px}
+    .forgot-password{text-align:right;margin-top:8px}
+    .forgot-password a{color:var(--accent);text-decoration:none;font-size:12px}
+    .forgot-password a:hover{text-decoration:underline}
+    .login-footer{position:fixed;bottom:0;left:0;width:100%;text-align:center;padding:12px 20px;color:rgba(255,255,255,0.7);font-size:12px;font-style:italic;line-height:1.5}
+    @media (max-width:480px){
+      .login-card{padding:30px 20px}
+      .logo-section h1{font-size:20px}
+      body{padding-bottom:60px}
+    }
+  </style>
+  <link rel="stylesheet" href="hangar-theme.css">
+  <link rel="stylesheet" href="responsive.css">
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="firebase-config.js"></script>
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-card">
+      <div class="logo-section">
+        <h1>⚡ EPM System</h1>
+        <p>Electrical Preventive Maintenance</p>
+      </div>
+
+      <div id="error-msg" class="error-msg"></div>
+      <div id="success-msg" class="success-msg"></div>
+
+      <!-- Login Form -->
+      <form id="login-form">
+        <div class="form-group">
+          <label for="login-email">Email Address</label>
+          <input id="login-email" type="email" placeholder="Enter your Email Address" required autocomplete="email" />
+        </div>
+        <div class="form-group">
+          <label for="login-password">Password</label>
+          <div class="password-toggle">
+            <input id="login-password" type="password" placeholder="Enter your Password" required autocomplete="current-password" />
+            <button type="button" class="toggle-btn" onclick="togglePassword('login-password', this)"><img src="icon/open_eye.png" alt="show password" style="width:18px;height:18px;vertical-align:middle"/></button>
+          </div>
+        </div>
+        <div class="forgot-password">
+          <a href="#" onclick="showResetForm();return false;">Forgot password?</a>
+        </div>
+        <button id="login-btn" type="submit" class="btn-primary">Sign In</button>
+      </form>
+
+      <div class="toggle-form">
+        Don't have an account? <a onclick="showSignupForm()">Sign up</a>
+      </div>
+
+      <!-- Signup Form (Hidden) -->
+      <form id="signup-form" style="display:none">
+        <div class="form-group">
+          <label for="signup-name">Full Name</label>
+          <input id="signup-name" type="text" placeholder="Enter your Full Name" required autocomplete="name" />
+        </div>
+        <div class="form-group">
+          <label for="signup-email">Email Address</label>
+          <input id="signup-email" type="email" placeholder="Enter a Valid Email Address" required autocomplete="email" />
+        </div>
+        <div class="form-group">
+          <label for="signup-password">Password</label>
+          <div class="password-toggle">
+            <input id="signup-password" type="password" placeholder="At least 6 characters" required autocomplete="new-password" minlength="6" />
+            <button type="button" class="toggle-btn" onclick="togglePassword('signup-password', this)"><img src="icon/open_eye.png" alt="show password" style="width:18px;height:18px;vertical-align:middle"/></button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="signup-password-confirm">Confirm Password</label>
+          <div class="password-toggle">
+            <input id="signup-password-confirm" type="password" placeholder="Re-enter password" required autocomplete="new-password" minlength="6" />
+            <button type="button" class="toggle-btn" onclick="togglePassword('signup-password-confirm', this)"><img src="icon/open_eye.png" alt="show password" style="width:18px;height:18px;vertical-align:middle"/></button>
+          </div>
+        </div>
+          <div class="form-group">
+            <label for="verifier-email">Existing Account Email (to verify)</label>
+            <input id="verifier-email" type="email" placeholder="Enter verifier's email address" required autocomplete="email" />
+          </div>
+          <div class="form-group">
+            <label for="verifier-password">Existing Account Password</label>
+            <div class="password-toggle">
+              <input id="verifier-password" type="password" placeholder="Verifier password" required autocomplete="current-password" />
+              <button type="button" class="toggle-btn" onclick="togglePassword('verifier-password', this)"><img src="icon/open_eye.png" alt="show password" style="width:18px;height:18px;vertical-align:middle"/></button>
+            </div>
+          </div>
+        <button id="signup-btn" type="submit" class="btn-primary">Create Account</button>
+      </form>
+
+      <div id="signup-toggle" class="toggle-form" style="display:none">
+        Already have an account? <a onclick="showLoginForm()">Sign in</a>
+      </div>
+
+      <!-- Reset Password Form (Hidden) -->
+      <form id="reset-form" style="display:none">
+        <div class="form-group">
+          <label for="reset-email">Email Address</label>
+          <input id="reset-email" type="email" placeholder="Enter your Existing Email Address" required autocomplete="email" />
+        </div>
+        <button id="reset-btn" type="submit" class="btn-primary">Send Reset Link</button>
+      </form>
+
+      <div id="reset-toggle" class="toggle-form" style="display:none">
+        <a onclick="showLoginForm()">Back to Sign In</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let auth = null;
+    // When verifying existing credentials during signup we temporarily suppress the global auth-state redirect.
+    window.suppressAuthRedirect = false;
+
+    // Initialize Firebase Auth
+    async function initAuth() {
+      try {
+        if (typeof firebase === 'undefined') {
+          showError('Firebase SDK not loaded. Please check your internet connection.');
+          return false;
+        }
+        
+        auth = firebase.auth();
+
+        // Check if user is already logged in. Respect `window.suppressAuthRedirect` when set.
+        auth.onAuthStateChanged(user => {
+          if (user && !window.suppressAuthRedirect) {
+            // User is signed in, redirect to main app
+            window.location.href = 'index.php';
+          }
+        });
+        
+        return true;
+      } catch (error) {
+        console.error('Auth initialization failed:', error);
+        showError('Authentication system unavailable. Please try again later.');
+        return false;
+      }
+    }
+
+    // Login
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('login-email').value.trim();
+      const password = document.getElementById('login-password').value;
+      const btn = document.getElementById('login-btn');
+      
+      hideMessages();
+      btn.disabled = true;
+      btn.textContent = 'Signing in...';
+      
+      try {
+        if (auth) {
+          await auth.signInWithEmailAndPassword(email, password);
+          showSuccess('Login successful! Redirecting...');
+          setTimeout(() => window.location.href = 'index.php', 1000);
+        } else {
+          throw new Error('Firebase unavailable');
+        }
+      } catch (error) {
+        console.error('Login error (Firebase):', error);
+        // try server fallback
+        try {
+          const resp = await fetch('api/auth.php', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({email, password})
+          });
+          const j = await resp.json();
+          if (j.success) {
+            showSuccess('Login successful! Redirecting...');
+            setTimeout(() => window.location.href = 'index.php', 1000);
+            return;
+          } else {
+            throw new Error(j.message || 'Server authentication failed');
+          }
+        } catch (srvErr) {
+          console.error('Login error (server):', srvErr);
+          let message = 'Login failed. Please try again.';
+          if (error.code === 'auth/user-not-found') message = 'No account found with this email.';
+          if (error.code === 'auth/wrong-password') message = 'Incorrect password.';
+          if (error.code === 'auth/invalid-email') message = 'Invalid email address.';
+          if (error.code === 'auth/user-disabled') message = 'This account has been disabled.';
+          if (error.code === 'auth/too-many-requests') message = 'Too many failed attempts. Try again later.';
+          showError(message);
+          btn.disabled = false;
+          btn.textContent = 'Sign In';
+        }
+      }
+    });
+
+    // Signup
+    document.getElementById('signup-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('signup-name').value.trim();
+      const email = document.getElementById('signup-email').value.trim();
+      const password = document.getElementById('signup-password').value;
+      const confirmPassword = document.getElementById('signup-password-confirm').value;
+      const btn = document.getElementById('signup-btn');
+      
+      hideMessages();
+      
+      if (password !== confirmPassword) {
+        showError('Passwords do not match.');
+        return;
+      }
+      
+      if (password.length < 6) {
+        showError('Password must be at least 6 characters.');
+        return;
+      }
+
+      // Require an existing account's credentials to authorize this signup
+      const verifierEmail = document.getElementById('verifier-email').value.trim();
+      const verifierPassword = document.getElementById('verifier-password').value;
+      if (!verifierEmail || !verifierPassword) {
+        showError('Please provide existing account credentials to authorize signup.');
+        return;
+      }
+
+      try {
+        // Suppress the global auth-state redirect while we verify credentials
+        window.suppressAuthRedirect = true;
+        // Attempt to sign in using the verifier credentials
+        await auth.signInWithEmailAndPassword(verifierEmail, verifierPassword);
+        // If successful, currentUser is now the verifier; proceed to create the new account
+      } catch (err) {
+        console.error('Verifier sign-in failed:', err);
+        let msg = 'Verifier credentials invalid.';
+        if (err.code === 'auth/user-not-found') msg = 'Verifier account not found.';
+        if (err.code === 'auth/wrong-password') msg = 'Incorrect verifier password.';
+        if (err.code === 'auth/user-disabled') msg = 'Verifier account is disabled.';
+        showError(msg);
+        // restore redirect behavior
+        window.suppressAuthRedirect = false;
+        return;
+      }
+      
+      btn.disabled = true;
+      btn.textContent = 'Creating account...';
+      
+      try {
+        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        
+        // Update profile with display name
+        await userCredential.user.updateProfile({ displayName: name });
+        
+        showSuccess('Account created successfully! Redirecting...');
+        // restore redirect behavior then navigate
+        window.suppressAuthRedirect = false;
+        setTimeout(() => window.location.href = 'index.php', 1500);
+      } catch (error) {
+        console.error('Signup error:', error);
+        let message = 'Signup failed. Please try again.';
+        if (error.code === 'auth/email-already-in-use') message = 'This email is already registered.';
+        if (error.code === 'auth/invalid-email') message = 'Invalid email address.';
+        if (error.code === 'auth/weak-password') message = 'Password is too weak. Use at least 6 characters.';
+        showError(message);
+        btn.disabled = false;
+        btn.textContent = 'Create Account';
+        // keep suppressAuthRedirect false to allow normal redirects for signed-in verifier
+        window.suppressAuthRedirect = false;
+      }
+    });
+
+    
+
+    // Reset Password
+    document.getElementById('reset-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('reset-email').value.trim();
+      const btn = document.getElementById('reset-btn');
+      
+      hideMessages();
+      btn.disabled = true;
+      btn.textContent = 'Sending...';
+      
+      try {
+        await auth.sendPasswordResetEmail(email);
+        showSuccess('Password reset email sent! Check your inbox.');
+        setTimeout(() => showLoginForm(), 3000);
+      } catch (error) {
+        console.error('Reset error:', error);
+        let message = 'Failed to send reset email.';
+        if (error.code === 'auth/user-not-found') message = 'No account found with this email.';
+        if (error.code === 'auth/invalid-email') message = 'Invalid email address.';
+        showError(message);
+      }
+      
+      btn.disabled = false;
+      btn.textContent = 'Send Reset Link';
+    });
+
+    // UI Toggle Functions
+    function showLoginForm() {
+      document.getElementById('login-form').style.display = 'block';
+      document.getElementById('signup-form').style.display = 'none';
+      document.getElementById('reset-form').style.display = 'none';
+      document.querySelector('.toggle-form').style.display = 'block';
+      document.getElementById('signup-toggle').style.display = 'none';
+      document.getElementById('reset-toggle').style.display = 'none';
+      hideMessages();
+    }
+
+    function showSignupForm() {
+      document.getElementById('login-form').style.display = 'none';
+      document.getElementById('signup-form').style.display = 'block';
+      document.getElementById('reset-form').style.display = 'none';
+      document.querySelector('.toggle-form').style.display = 'none';
+      document.getElementById('signup-toggle').style.display = 'block';
+      document.getElementById('reset-toggle').style.display = 'none';
+      hideMessages();
+    }
+
+    function showResetForm() {
+      document.getElementById('login-form').style.display = 'none';
+      document.getElementById('signup-form').style.display = 'none';
+      document.getElementById('reset-form').style.display = 'block';
+      document.querySelector('.toggle-form').style.display = 'none';
+      document.getElementById('signup-toggle').style.display = 'none';
+      document.getElementById('reset-toggle').style.display = 'block';
+      hideMessages();
+    }
+
+    function togglePassword(fieldId, btn) {
+      const field = document.getElementById(fieldId);
+      if (!field) return;
+      const isPassword = field.type === 'password';
+      field.type = isPassword ? 'text' : 'password';
+
+      // Update icon if provided
+      try {
+        let img = null;
+        if (btn && btn.querySelector) img = btn.querySelector('img');
+        if (!img) {
+          // fallback: find nearest .password-toggle button that targets this field
+          const buttons = document.querySelectorAll('.password-toggle .toggle-btn');
+          buttons.forEach(b => {
+            if (b.getAttribute('onclick') && b.getAttribute('onclick').includes(fieldId)) img = b.querySelector('img');
+          });
+        }
+        if (img) {
+          img.src = isPassword ? 'icon/close_eye.png' : 'icon/open_eye.png';
+          img.alt = isPassword ? 'hide password' : 'show password';
+        }
+      } catch (e) {
+        // non-fatal
+      }
+    }
+
+    function showError(message) {
+      const errorEl = document.getElementById('error-msg');
+      errorEl.textContent = message;
+      errorEl.style.display = 'block';
+    }
+
+    function showSuccess(message) {
+      const successEl = document.getElementById('success-msg');
+      successEl.textContent = message;
+      successEl.style.display = 'block';
+    }
+
+    function hideMessages() {
+      document.getElementById('error-msg').style.display = 'none';
+      document.getElementById('success-msg').style.display = 'none';
+    }
+
+    // Initialize on page load
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initAuth);
+    } else {
+      initAuth();
+    }
+  </script>
+  <footer class="login-footer">
+    &ldquo;So do not fear, for I am with you; do not be frightened, for I am your God. I will strengthen you and help you; I will uphold you with my righteous right hand.&rdquo; (Isaiah 41:10, NIV)
+  </footer>
+  <script src="hangar-theme.js"></script>
+<script src="theme-loader.js"></script>
+</body>
+</html>
+

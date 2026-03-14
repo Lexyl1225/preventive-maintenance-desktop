@@ -1,0 +1,1762 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="images/favicon.ico">
+  <title>Load Balancing & Full Load Test - 3-Phase</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+	/* ===== DARK THEME DESIGN SYSTEM ===== */
+	:root {
+	  --bg-base:            #0d0f14;
+	  --bg-card:            #161a23;
+	  --bg-card-alt:        #1c2030;
+	  --bg-input:           #1e2235;
+	  --bg-input-hover:     #242840;
+	  --bg-disabled:        #161924;
+	  --border:             rgba(255,255,255,0.09);
+	  --border-strong:      rgba(255,255,255,0.17);
+	  --border-focus:       #4f8ef7;
+	  --text-primary:       #e6e9f0;
+	  --text-secondary:     #8a93ab;
+	  --text-muted:         #515a70;
+	  --accent:             #4f8ef7;
+	  --accent-hover:       #7aaeff;
+	  --accent-dark:        #2e5fbd;
+	  --accent-dim:         rgba(79,142,247,0.14);
+	  --muted:              #8a93ab;
+	  --btn-secondary-bg:   rgba(255,255,255,0.06);
+	  --btn-secondary-border: rgba(255,255,255,0.11);
+	  --table-header:       #181d2c;
+	  --table-row-even:     rgba(255,255,255,0.025);
+	  --shadow-card:        0 4px 28px rgba(0,0,0,0.55);
+	  --shadow-btn:         0 2px 8px rgba(0,0,0,0.40);
+	  --transition:         0.14s ease;
+	  --radius-sm:          6px;
+	  --radius-md:          10px;
+	  --radius-lg:          14px;
+	  --border-color:       rgba(255,255,255,0.09);
+	}
+
+	/* ===== RESET & BASE ===== */
+	*, *::before, *::after { box-sizing: border-box; }
+	body {
+	  font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
+	  margin: 0;
+	  min-height: 100vh;
+	  color: var(--text-primary);
+	  background: var(--bg-base) url('images/tw_bg.png') no-repeat center top / cover;
+	  background-attachment: fixed;
+	  background-blend-mode: overlay;
+	  font-size: 14px;
+	  -webkit-font-smoothing: antialiased;
+	}
+
+	/* ===== FLOATING NAV BUTTON ===== */
+	.back-home-btn {
+	  position: fixed;
+	  top: 16px; right: 20px;
+	  z-index: 1000;
+	  background: rgba(79,142,247,0.18);
+	  color: #7aaeff;
+	  border: 1px solid rgba(79,142,247,0.32);
+	  padding: 9px 16px;
+	  border-radius: var(--radius-md);
+	  cursor: pointer;
+	  font-family: inherit;
+	  font-size: 13px;
+	  font-weight: 700;
+	  letter-spacing: 0.3px;
+	  box-shadow: var(--shadow-btn);
+	  transition: all var(--transition);
+	  backdrop-filter: blur(10px);
+	  -webkit-backdrop-filter: blur(10px);
+	}
+	.back-home-btn:hover {
+	  background: rgba(79,142,247,0.30);
+	  color: #fff;
+	  transform: translateY(-1px);
+	}
+
+	/* ===== MAIN WRAPPER ===== */
+	.wrap { max-width: 1200px; margin: 20px auto; padding: 16px; }
+
+	/* ===== FORM HEADER TABLE ===== */
+	.form-header {
+	  background: var(--bg-card);
+	  border: 1px solid var(--border-strong);
+	  border-radius: var(--radius-md);
+	  margin-bottom: 14px;
+	  overflow: hidden;
+	  box-shadow: var(--shadow-card);
+	}
+	.form-header table { width: 100%; border-collapse: collapse; }
+	.form-header td {
+	  padding: 9px 14px;
+	  border: 1px solid var(--border);
+	  font-size: 13px;
+	  color: var(--text-primary);
+	  vertical-align: middle;
+	}
+	.form-header .lbl {
+	  font-weight: 700;
+	  background: var(--bg-card-alt);
+	  width: 148px;
+	  white-space: nowrap;
+	  color: var(--text-secondary);
+	  text-transform: uppercase;
+	  font-size: 11px;
+	  letter-spacing: 0.5px;
+	}
+	.form-header input,
+	.form-header select {
+	  border: none;
+	  border-bottom: 1px solid rgba(255,255,255,0.15);
+	  background: transparent;
+	  padding: 4px 2px;
+	  width: 100%;
+	  font-family: inherit;
+	  font-size: 13px;
+	  font-weight: 600;
+	  color: var(--text-primary);
+	  outline: none;
+	  border-radius: 0;
+	  transition: border-color var(--transition);
+	}
+	.form-header input:focus,
+	.form-header select:focus { border-bottom-color: var(--border-focus); }
+	.form-header input::placeholder { color: var(--text-muted); }
+
+	/* ===== PANEL INFO ROW ===== */
+	.panel-info-row {
+	  display: flex;
+	  gap: 14px;
+	  align-items: center;
+	  margin-top: 14px;
+	  padding: 13px 16px;
+	  background: var(--bg-card-alt);
+	  border: 1px solid var(--border);
+	  border-radius: var(--radius-md);
+	  flex-wrap: wrap;
+	}
+	.panel-info-row label {
+	  margin: 0;
+	  font-size: 12px;
+	  font-weight: 700;
+	  white-space: nowrap;
+	  color: var(--text-secondary);
+	  text-transform: uppercase;
+	  letter-spacing: 0.4px;
+	  flex-shrink: 0;
+	}
+
+	/* ===== SYSTEM INFO BAR ===== */
+	.system-info-bar {
+	  background: var(--bg-card-alt);
+	  border: 1px solid var(--border);
+	  padding: 12px 16px;
+	  display: flex;
+	  align-items: center;
+	  gap: 10px;
+	  flex-wrap: wrap;
+	  margin-bottom: 14px;
+	  margin-top: 12px;
+	  border-radius: var(--radius-md);
+	  font-size: 13px;
+	  font-weight: 700;
+	}
+	.system-info-bar label {
+	  display: inline;
+	  margin: 0;
+	  font-weight: 600;
+	  font-size: 11px;
+	  color: var(--text-secondary);
+	  white-space: nowrap;
+	  text-transform: uppercase;
+	  letter-spacing: 0.3px;
+	}
+	.system-info-bar input,
+	.system-info-bar select {
+	  border: 1px solid var(--border);
+	  background: var(--bg-input);
+	  padding: 5px 8px;
+	  font-family: inherit;
+	  font-size: 13px;
+	  font-weight: 600;
+	  color: var(--text-primary);
+	  outline: none;
+	  border-radius: var(--radius-sm);
+	  transition: border-color var(--transition), background var(--transition);
+	}
+	.system-info-bar input:focus,
+	.system-info-bar select:focus {
+	  border-color: var(--border-focus);
+	  background: var(--bg-input-hover);
+	  box-shadow: 0 0 0 3px rgba(79,142,247,0.16);
+	}
+	.sys-sep { color: var(--text-muted); margin: 0 2px; font-weight: 400; }
+
+	/* ===== TABS ===== */
+	.tabs {
+	  display: flex;
+	  gap: 0;
+	  margin-bottom: 14px;
+	  border-bottom: 2px solid rgba(79,142,247,0.35);
+	}
+	.tab {
+	  padding: 10px 22px;
+	  cursor: pointer;
+	  border: 1px solid var(--border);
+	  border-bottom: none;
+	  background: var(--bg-card-alt);
+	  font-weight: 700;
+	  font-size: 13px;
+	  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+	  margin-right: 3px;
+	  color: var(--text-secondary);
+	  transition: background var(--transition), color var(--transition);
+	  font-family: inherit;
+	  letter-spacing: 0.2px;
+	}
+	.tab.active {
+	  background: var(--bg-card);
+	  border-color: rgba(79,142,247,0.40);
+	  border-bottom: 2px solid var(--bg-card);
+	  color: var(--accent-hover);
+	  margin-bottom: -2px;
+	}
+	.tab:hover:not(.active) { background: rgba(255,255,255,0.06); color: var(--text-primary); }
+
+	/* ===== LAYOUT GRID ===== */
+	.grid { display: grid; grid-template-columns: 1fr 360px; gap: 16px; }
+
+	/* ===== CARDS ===== */
+	.card {
+	  background: var(--bg-card);
+	  padding: 20px;
+	  border-radius: var(--radius-md);
+	  border: 1px solid var(--border);
+	  box-shadow: var(--shadow-card);
+	}
+
+	/* ===== GENERAL LABELS & INPUTS ===== */
+	label {
+	  display: block;
+	  font-size: 11px;
+	  margin-top: 10px;
+	  color: var(--text-secondary);
+	  font-weight: 600;
+	  letter-spacing: 0.3px;
+	  text-transform: uppercase;
+	}
+	input[type=text],
+	input[type=number],
+	select,
+	textarea {
+	  width: 100%;
+	  padding: 8px 10px;
+	  border: 1px solid var(--border);
+	  border-radius: var(--radius-sm);
+	  font-family: inherit;
+	  font-size: 13px;
+	  color: var(--text-primary);
+	  font-weight: 500;
+	  background: var(--bg-input);
+	  transition: border-color var(--transition), background var(--transition), box-shadow var(--transition);
+	  appearance: auto;
+	  -webkit-appearance: auto;
+	}
+	input[type=text]:hover,
+	input[type=number]:hover,
+	select:hover { background: var(--bg-input-hover); border-color: var(--border-strong); }
+	input[type=text]:focus,
+	input[type=number]:focus,
+	select:focus,
+	textarea:focus {
+	  outline: none;
+	  border-color: var(--border-focus);
+	  box-shadow: 0 0 0 3px rgba(79,142,247,0.17);
+	  background: var(--bg-input-hover);
+	}
+	input[type=text]::placeholder,
+	input[type=number]::placeholder,
+	textarea::placeholder { color: var(--text-muted); }
+	input:disabled {
+	  background: var(--bg-disabled) !important;
+	  border-color: rgba(255,255,255,0.04) !important;
+	  color: var(--text-muted) !important;
+	  cursor: not-allowed;
+	  opacity: 0.45;
+	}
+	.small { width: 120px; display: inline-block; }
+
+	/* ===== CIRCUIT DETAILS ROW ===== */
+	.circuit-details-row {
+	  display: grid;
+	  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+	  gap: 12px;
+	  padding: 14px;
+	  background: var(--bg-card-alt);
+	  border: 1px solid var(--border);
+	  border-radius: var(--radius-md);
+	  margin-bottom: 14px;
+	}
+	.circuit-details-row label { margin-top: 0; }
+	.circuit-details-row input { padding: 8px; font-size: 13px; }
+
+	/* ===== DATA TABLE ===== */
+	table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+	th, td {
+	  padding: 8px 10px;
+	  border: 1px solid var(--border);
+	  text-align: left;
+	  font-size: 13px;
+	  color: var(--text-primary);
+	  font-weight: 500;
+	}
+	th {
+	  background: var(--table-header);
+	  color: var(--text-secondary);
+	  text-align: center;
+	  font-weight: 700;
+	  font-size: 11px;
+	  text-transform: uppercase;
+	  letter-spacing: 0.5px;
+	  position: sticky;
+	  top: 0;
+	  border-bottom: 2px solid rgba(79,142,247,0.28);
+	}
+	#lb-body tr:nth-child(even) td { background: var(--table-row-even); }
+	#lb-body tr:hover td { background: rgba(79,142,247,0.055); }
+
+	/* ===== TOOLBAR & BUTTONS ===== */
+	.toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+	button {
+	  background: var(--accent);
+	  color: #fff;
+	  border: 1px solid transparent;
+	  padding: 8px 15px;
+	  border-radius: var(--radius-sm);
+	  cursor: pointer;
+	  font-family: inherit;
+	  font-size: 13px;
+	  font-weight: 700;
+	  transition: all var(--transition);
+	  letter-spacing: 0.2px;
+	  box-shadow: var(--shadow-btn);
+	}
+	button:hover {
+	  background: var(--accent-hover);
+	  transform: translateY(-1px);
+	  box-shadow: 0 4px 14px rgba(79,142,247,0.38);
+	}
+	button:active { transform: translateY(0); box-shadow: var(--shadow-btn); }
+	button.ghost {
+	  background: var(--btn-secondary-bg);
+	  color: var(--text-primary);
+	  border-color: var(--btn-secondary-border);
+	  box-shadow: none;
+	}
+	button.ghost:hover {
+	  background: rgba(255,255,255,0.12);
+	  border-color: var(--border-strong);
+	  transform: translateY(-1px);
+	}
+	.muted { color: var(--text-secondary); font-size: 13px; font-weight: 500; }
+
+	/* ===== SUMMARY BARS ===== */
+	.bars {
+	  display: flex;
+	  gap: 8px;
+	  align-items: flex-end;
+	  height: 130px;
+	  padding: 14px;
+	  border-radius: var(--radius-md);
+	  background: var(--bg-card-alt);
+	  margin-top: 10px;
+	  border: 1px solid var(--border);
+	}
+	.bar {
+	  flex: 1;
+	  display: flex;
+	  flex-direction: column;
+	  justify-content: flex-end;
+	  align-items: center;
+	  padding: 6px;
+	  border-radius: var(--radius-sm);
+	}
+	.bar .fill {
+	  width: 62%;
+	  background: linear-gradient(180deg, var(--accent) 0%, var(--accent-dark) 100%);
+	  border-radius: var(--radius-sm);
+	  transition: height 0.3s ease;
+	  min-height: 4px;
+	}
+	.label { font-size: 12px; margin-top: 8px; font-weight: 700; color: var(--text-primary); }
+
+	/* ===== SIGNATURE SECTION ===== */
+	.signature-section {
+	  margin-top: 18px;
+	  padding: 20px 22px;
+	  background: var(--bg-card);
+	  border: 1px solid var(--border-strong);
+	  border-radius: var(--radius-md);
+	  box-shadow: var(--shadow-card);
+	}
+	.signature-section h3 {
+	  margin: 0 0 16px;
+	  font-size: 13px;
+	  text-transform: uppercase;
+	  letter-spacing: 0.6px;
+	  color: var(--text-secondary);
+	  border-bottom: 1px solid var(--border);
+	  padding-bottom: 10px;
+	  font-weight: 800;
+	}
+	.sig-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px 40px; }
+	.sig-block { font-size: 13px; }
+	.sig-block .sig-label {
+	  font-weight: 700;
+	  margin-bottom: 8px;
+	  text-transform: uppercase;
+	  font-size: 10px;
+	  letter-spacing: 0.6px;
+	  color: var(--text-secondary);
+	}
+	.sig-block input {
+	  border: none;
+	  border-bottom: 1px dashed rgba(255,255,255,0.20);
+	  background: transparent;
+	  width: 100%;
+	  padding: 7px 2px;
+	  font-family: inherit;
+	  font-size: 13px;
+	  font-weight: 600;
+	  color: var(--text-primary);
+	  outline: none;
+	  border-radius: 0;
+	  transition: border-color var(--transition);
+	}
+	.sig-block input:focus { border-bottom-color: var(--border-focus); }
+	.sig-block input::placeholder { color: var(--text-muted); }
+	.sig-block .sig-title {
+	  font-size: 11px;
+	  color: var(--text-muted);
+	  text-align: center;
+	  margin-top: 5px;
+	  font-style: italic;
+	  font-weight: 600;
+	}
+	.sig-block .sig-sub { margin-top: 12px; font-size: 12px; color: var(--text-secondary); font-weight: 500; }
+	.sig-block .sig-sub div {
+	  margin: 4px 0;
+	  border-bottom: 1px dotted rgba(255,255,255,0.14);
+	  padding-bottom: 3px;
+	}
+
+	/* ===== SUGGESTIONS ===== */
+	#suggestions {
+	  font-size: 13px;
+	  color: var(--text-secondary);
+	  margin-top: 4px;
+	  line-height: 1.6;
+	}
+
+	/* ===== FULL LOAD TEST ===== */
+	#fulltest-section h2 { color: var(--text-primary); font-size: 15px; margin-top: 12px; }
+	#fulltest-section h3 { color: var(--text-secondary); font-size: 13px; }
+
+	/* ===== RESPONSIVE ===== */
+	@media (max-width: 980px) { .grid { grid-template-columns: 1fr; } }
+	@media (max-width: 768px) {
+	  .wrap { margin: 10px auto; padding: 10px; }
+	  .back-home-btn { top: 10px; right: 10px; padding: 8px 12px; font-size: 12px; }
+	  .card { padding: 12px; }
+	  label { font-size: 11px; margin-top: 8px; }
+	  input[type=text], input[type=number], select, textarea { padding: 7px 8px; font-size: 13px; }
+	  button { padding: 7px 10px; font-size: 12px; }
+	  table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; font-size: 12px; }
+	  th, td { padding: 6px; font-size: 12px; white-space: nowrap; }
+	  .bars { height: 100px; padding: 8px; }
+	  .bar .fill { width: 50%; }
+	  .label { font-size: 11px; }
+	  .tabs { gap: 0; }
+	  .tab { padding: 7px 12px; font-size: 12px; }
+	  .form-header td { padding: 5px 8px; font-size: 12px; }
+	  .form-header .lbl { width: auto; }
+	  .system-info-bar { flex-direction: column; align-items: flex-start; gap: 6px; font-size: 12px; }
+	  .sig-grid { grid-template-columns: 1fr; gap: 16px; }
+	  .circuit-details-row { grid-template-columns: 1fr 1fr; gap: 8px; }
+	  .panel-info-row { flex-direction: column; align-items: stretch; gap: 8px; }
+	}
+	@media (max-width: 600px) {
+	  .circuit-details-row { grid-template-columns: 1fr; }
+	  div[style*="display:flex"] { flex-direction: column !important; }
+	  div[style*="width:"] { width: 100% !important; }
+	  .small { width: 100% !important; }
+	}
+	@media print {
+	  .toolbar, button, .back-home-btn, .tabs { display: none !important; }
+	  .page { box-shadow: none; border: none; }
+	  body { background: #fff; color: #111; }
+	}
+  </style>
+  <link rel="stylesheet" href="hangar-theme.css">
+  <link rel="stylesheet" href="responsive.css">
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script src="firebase-config.js"></script>
+  <script src="auth-guard.js"></script>
+  <script src="db.js"></script>
+</head>
+<body>
+  <button class="back-home-btn" onclick="window.location.href='index.php'">← Back to Home Page</button>
+  
+  <div class="wrap">
+    <!-- Professional Form Header -->
+    <div class="form-header">
+      <table>
+        <tr>
+          <td class="lbl">Company Name</td>
+          <td colspan="3"><input id="company-name" type="text" placeholder="Enter company name" /></td>
+        </tr>
+        <tr>
+          <td class="lbl">Location</td>
+          <td><input id="location-name" type="text" placeholder="Enter location" /></td>
+          <td class="lbl">Branch Code</td>
+          <td><input id="branch-code" type="text" placeholder="Code" /></td>
+        </tr>
+        <tr>
+          <td class="lbl">Subject</td>
+          <td><strong style="color:#7aaeff;letter-spacing:.5px">LOAD BALANCING &amp; FULL LOAD TEST</strong></td>
+          <td class="lbl">Date</td>
+          <td><input id="form-date" type="date" /></td>
+        </tr>
+        <tr>
+          <td class="lbl">Time</td>
+          <td><input id="form-time" type="time" /></td>
+          <td class="lbl">Form</td>
+          <td class="muted" style="font-size:12px">load_balancing_form.php</td>
+        </tr>
+      </table>
+    </div>
+
+
+    <!-- Panel Board Info -->
+    <div class="panel-info-row">
+      <label for="panel-board">Panel Board:</label>
+      <input id="panel-board" type="text" placeholder="Panel Board Name" style="flex:1" />
+      <span class="muted">Panel appears on printable form</span>
+    </div>
+
+    <!-- System Voltage & Power Configuration -->
+    <div class="system-info-bar">
+      <span style="font-weight:700;color:var(--text-primary);letter-spacing:.3px;font-size:12px;text-transform:uppercase">SYSTEM VOLTAGE :</span>
+      <label>V(L-L)</label>
+      <input id="v-line-line" type="number" step="0.1" placeholder="V" style="width:80px" />
+      <label>V(L-N)</label>
+      <input id="v-line-neutral" type="number" step="0.1" placeholder="V" style="width:80px" />
+      <label>V(Ph)</label>
+      <input id="v-phase" type="number" step="0.1" placeholder="V" style="width:80px" />
+      <div id="ind-vll-group" style="display:none;align-items:center;gap:4px;flex-wrap:nowrap">
+        <span class="sys-sep">|</span>
+        <label style="margin:0;white-space:nowrap;font-size:11px;color:var(--text-secondary)">V(L-L) each:</label>
+        <input id="v-l1l2-ind" type="number" step="0.1" placeholder="L1-L2" style="width:72px" />
+        <input id="v-l1l3-ind" type="number" step="0.1" placeholder="L1-L3" style="width:72px" />
+        <input id="v-l2l3-ind" type="number" step="0.1" placeholder="L2-L3" style="width:72px" />
+      </div>
+      <div id="ind-vln-group" style="display:none;align-items:center;gap:4px;flex-wrap:nowrap">
+        <span class="sys-sep">|</span>
+        <label style="margin:0;white-space:nowrap;font-size:11px;color:var(--text-secondary)">V(L-N) each:</label>
+        <input id="v-l1n-ind" type="number" step="0.1" placeholder="L1-N" style="width:72px" />
+        <input id="v-l2n-ind" type="number" step="0.1" placeholder="L2-N" style="width:72px" />
+        <input id="v-l3n-ind" type="number" step="0.1" placeholder="L3-N" style="width:72px" />
+      </div>
+      <span class="sys-sep">:</span>
+      <span style="font-weight:700;color:var(--text-primary);letter-spacing:.3px;font-size:12px;text-transform:uppercase">POWER SYSTEM CONFIGURATION :</span>
+      <select id="circuit-type" style="width:auto;min-width:220px">
+        <option value="single_ln">Single Phase (Line-to-Neutral)</option>
+        <option value="single_llc">Single Phase (Line-to-Line / Combined)</option>
+        <option value="single_ll">Single Phase (Line-to-Line / Split)</option>
+        <option value="three_wye">Three Phase (Wye / Line-to-Neutral)</option>
+        <option value="three_delta">Three Phase (Delta / Line-to-Line)</option>
+      </select>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs" style="align-items:flex-end;justify-content:flex-start">
+      <div class="tab active" id="tab-balance">Load Balancing</div>
+      <div class="tab" id="tab-fulltest">Full Load Test</div>
+      <button id="clear-form-btn" type="button" style="margin-left:auto;margin-bottom:4px;background:rgba(255,255,255,0.06);color:var(--text-secondary);border:1px solid var(--btn-secondary-border);padding:6px 14px;border-radius:var(--radius-sm);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;transition:all var(--transition);letter-spacing:.2px;box-shadow:none" onmouseover="this.style.background='rgba(239,68,68,0.14)';this.style.color='#f87171';this.style.borderColor='rgba(239,68,68,0.30)'" onmouseout="this.style.background='rgba(255,255,255,0.06)';this.style.color='var(--text-secondary)';this.style.borderColor='var(--btn-secondary-border)'">⊘ Clear Form</button>
+    </div>
+
+    <div class="grid">
+      <!-- Main column -->
+      <main class="card">
+        <!-- Load Balancing Form -->
+        <section id="balance-section">
+          <h2 style="margin:0 0 12px;font-size:15px;color:var(--text-primary);font-weight:700;letter-spacing:.3px">Add Circuit Load</h2>
+          <div class="circuit-details-row">
+            <div>
+              <label for="mcb-capacity">MCB Capacity (A)</label>
+              <input id="mcb-capacity" type="number" step="1" placeholder="Ampere" />
+            </div>
+            <div>
+              <label for="main-voltage">Main Voltage (V)</label>
+              <input id="main-voltage" type="number" step="0.1" placeholder="Volt" />
+            </div>
+            <div>
+              <label for="wire-size">Size & Type of Wire</label>
+              <input id="wire-size" type="text" placeholder="e.g. 3x2.5mm² Cu" />
+            </div>
+            <div>
+              <label for="line-current-input">Measured Line Current (A)</label>
+              <input id="line-current-input" type="number" step="0.01" placeholder="Measured A" />
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:end;margin-bottom:8px">
+            <div style="flex:1">
+              <label for="lb-name">Load name</label>
+              <input id="lb-name" type="text" placeholder="Circuit number or description e.g. #1" />
+            </div>
+            <div style="width:140px">
+              <label for="lb-value">Load (A)</label>
+              <input id="lb-value" type="number" step="0.01" placeholder="A" />
+            </div>
+            <div style="width:140px">
+              <label for="lb-phase">Phase / Side</label>
+              <select id="lb-phase"></select>
+            </div>
+            <div style="width:120px">
+              <button id="lb-add">Add</button>
+            </div>
+          </div>
+
+          <div class="toolbar" style="margin-top:8px">
+            <button id="lb-clear" class="ghost">Clear Loads</button>
+            <button id="lb-export" class="ghost">Export CSV</button>
+            <button id="lb-import" class="ghost">Import CSV</button>
+            <button id="print-form" class="ghost">Printable Form</button>
+            <button id="save-printable" class="ghost">Save</button>
+            <button id="view-save" class="ghost" onclick="window.location.href='load_balancing_records.php'">View Saved Forms</button>
+          </div>
+
+          <h3 style="margin:14px 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary)">Loads</h3>
+          <div style="max-height:280px;overflow:auto;border:1px solid var(--border);border-radius:var(--radius-sm);scrollbar-width:thin;scrollbar-color:rgba(79,142,247,.35) transparent">
+            <table aria-describedby="loads-count">
+              <thead><tr><th>Load Description</th><th>Amps (A)</th><th>Phase</th><th></th></tr></thead>
+              <tbody id="lb-body"></tbody>
+            </table>
+          </div>
+          <div id="loads-count" class="muted" style="margin-top:6px">0 loads</div>
+
+        </section>
+
+        <!-- Full Load Test Form -->
+        <section id="fulltest-section" style="display:none">
+          <h2 style="margin-top:12px">Full Load Test</h2>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div>
+              <label for="nameplate-power">Nameplate Full Load Power (kW)</label>
+              <input id="nameplate-power" type="number" step="0.1" placeholder="Total kW at full load" />
+
+              <label for="meas-van">Measured Voltages</label>
+              <div style="display:flex;gap:8px">
+                <input id="meas-van" type="number" step="0.1" placeholder="V AN" />
+                <input id="meas-vbn" type="number" step="0.1" placeholder="V BN" />
+                <input id="meas-vcn" type="number" step="0.1" placeholder="V CN" />
+              </div>
+
+              <label for="meas-ia">Measured Currents (A)</label>
+              <div style="display:flex;gap:8px">
+                <input id="meas-ia" type="number" step="0.1" placeholder="I A" />
+                <input id="meas-ib" type="number" step="0.1" placeholder="I B" />
+                <input id="meas-ic" type="number" step="0.1" placeholder="I C" />
+              </div>
+
+              <label for="meas-pf">Power Factors</label>
+              <div style="display:flex;gap:8px">
+                <input id="pf-a" type="number" step="0.01" placeholder="PF A (0-1)" />
+                <input id="pf-b" type="number" step="0.01" placeholder="PF B" />
+                <input id="pf-c" type="number" step="0.01" placeholder="PF C" />
+              </div>
+
+              <div class="toolbar"><button id="run-test">Compute</button><button id="reset-test" class="ghost">Reset</button></div>
+            </div>
+
+            <div>
+              <h3>Test Results</h3>
+              <div class="muted">Results will show per-phase and total power, and % of nameplate full load.</div>
+              <div style="margin-top:8px">
+                <div><strong>Phase A:</strong> <span id="res-pa">0 kW</span></div>
+                <div><strong>Phase B:</strong> <span id="res-pb">0 kW</span></div>
+                <div><strong>Phase C:</strong> <span id="res-pc">0 kW</span></div>
+                <div style="margin-top:6px"><strong>Total:</strong> <span id="res-total">0 kW</span></div>
+                <div><strong>% of Nameplate:</strong> <span id="res-pct">0 %</span></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </main>
+
+      <!-- Side column: summary and suggestions -->
+      <aside class="card">
+        <h2 style="margin-top:0;font-size:14px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--text-secondary)">Summary</h2>
+        <div class="bars" aria-hidden="false">
+              <div class="bar"><div id="barA" class="fill" style="height:8%"></div><div class="label">A: <span id="sumA">0</span> A</div></div>
+              <div class="bar"><div id="barB" class="fill" style="height:8%"></div><div class="label">B: <span id="sumB">0</span> A</div></div>
+              <div class="bar"><div id="barC" class="fill" style="height:8%"></div><div class="label">C: <span id="sumC">0</span> A</div></div>
+        </div>
+
+        <div style="margin-top:10px">
+          <div><strong>Total:</strong> <span id="sumTotal">0 A</span></div>
+          <div><strong>Average per Phase:</strong> <span id="sumAvg">0 A</span></div>
+          <div><strong>Imbalance:</strong> <span id="sumImb">0 %</span></div>
+        </div>
+
+        <div style="margin-top:12px">
+          <label for="remarks-input"><strong>Remarks</strong></label>
+          <textarea id="remarks-input" rows="3" placeholder="Enter remarks..." style="width:100%;padding:8px;margin-top:6px"></textarea>
+        </div>
+
+        <h3 style="margin-top:12px">Suggestions</h3>
+        <div id="suggestions">Add loads to see suggestions to rebalance phases.</div>
+        <div class="toolbar" style="margin-top:12px">
+          <button id="apply-suggestion" class="ghost">Apply First Suggestion</button>
+          <button id="export-full" class="ghost">Export Report</button>
+        </div>
+      </aside>
+
+    </div>
+
+    
+
+    <!-- Signature Section -->
+    <div class="signature-section">
+      <h3>Signatories</h3>
+      <div class="sig-grid">
+        <div class="sig-block">
+          <div class="sig-label">Conducted By:</div>
+          <input id="conducted-by" type="text" placeholder="Electrician / Contractor name" />
+          <div class="sig-title">Electrician / Electrical Contractor</div>
+        </div>
+        <div class="sig-block">
+          <div class="sig-label">Witnessed By:</div>
+          <input id="witness-by" type="text" placeholder="Mall Representative / Operation In-charge" />
+          <div class="sig-title">Mall Representative / Operation In-charge</div>
+        </div>
+        <div class="sig-block">
+          <div class="sig-label">Certified By:</div>
+          <input id="certified-by" type="text" placeholder="RME / REE / PEE name" />
+          <div class="sig-title">RME / REE / PEE</div>
+          <div class="sig-sub">
+            <div>PRC REG NO.:</div>
+            <div>Validity:</div>
+            <div>PTR No.:</div>
+            <div>Issued on:</div>
+            <div>Issued at:</div>
+            <div>Tin No.:</div>
+          </div>
+        </div>
+        <div class="sig-block">
+          <div class="sig-label">Witnessed By:</div>
+          <input id="witness-tenant" type="text" placeholder="Tenant Representative name" />
+          <div class="sig-title">Tenant Representative</div>
+        </div>
+      </div>
+    </div>
+
+    <input id="file-input" type="file" accept="text/csv" style="display:none" />
+  </div>
+
+  <script>
+        // --- Save Printable Form Record ---
+        document.addEventListener('DOMContentLoaded', function() {
+          const saveBtn = document.getElementById('save-printable');
+          if(saveBtn) saveBtn.addEventListener('click', savePrintableRecord);
+        });
+
+        async function savePrintableRecord() {
+          // Ask for a filename before saving
+          const fileName = prompt('Enter a file name for this record:', 'LB_' + new Date().toISOString().slice(0,10));
+          if(!fileName || !fileName.trim()) {
+            alert('Save cancelled - a file name is required.');
+            return;
+          }
+          // Gather ALL user input fields and loads
+          // use the date picker value (ISO format) or fall back to today
+          const date = document.getElementById('form-date')?.value || new Date().toISOString().slice(0,10);
+          // prefer 24‑hour time so API doesn't reject it
+          const time = new Date().toTimeString().split(' ')[0];
+          const savedAt = new Date().toISOString();
+          const refId = 'LB-' + new Date().getFullYear() + String(new Date().getMonth()+1).padStart(2,'0') + String(new Date().getDate()).padStart(2,'0') + '-' + String(new Date().getHours()).padStart(2,'0') + String(new Date().getMinutes()).padStart(2,'0') + String(new Date().getSeconds()).padStart(2,'0');
+          const branch = document.getElementById('branch-code')?.value || '';
+          const company = document.getElementById('company-name')?.value || '';
+          const location = document.getElementById('location-name')?.value || '';
+          const panel = document.getElementById('panel-board')?.value || '';
+          const mcb = document.getElementById('mcb-capacity')?.value || '';
+          const mainV = document.getElementById('main-voltage')?.value || '';
+          const wires = document.getElementById('wire-size')?.value || '';
+          const conductedBy = document.getElementById('conducted-by')?.value || '';
+          const witnessBy = document.getElementById('witness-by')?.value || '';
+          const certifiedBy = document.getElementById('certified-by')?.value || '';
+          const witnessTenant = document.getElementById('witness-tenant')?.value || '';
+          const remarks = document.getElementById('remarks-input')?.value || '';
+          const circType = document.getElementById('circuit-type')?.value || '';
+          const vll = document.getElementById('v-line-line')?.value || '';
+          const vln = document.getElementById('v-line-neutral')?.value || '';
+          const vph = document.getElementById('v-phase')?.value || '';
+          // Individual per-column voltages (three-phase only)
+          const vl1l2Ind = document.getElementById('v-l1l2-ind')?.value || '';
+          const vl1l3Ind = document.getElementById('v-l1l3-ind')?.value || '';
+          const vl2l3Ind = document.getElementById('v-l2l3-ind')?.value || '';
+          const vl1nInd  = document.getElementById('v-l1n-ind')?.value || '';
+          const vl2nInd  = document.getElementById('v-l2n-ind')?.value || '';
+          const vl3nInd  = document.getElementById('v-l3n-ind')?.value || '';
+          // Save the full loads array (must be declared before kvaTotal computation)
+          let loadsArr = [];
+          try {
+            loadsArr = Array.isArray(loads) ? JSON.parse(JSON.stringify(loads)) : [];
+          } catch(e) { loadsArr = []; }
+          // Compute KVA total
+          let kvaTotal = '';
+          {
+            let kvaV = 0;
+            if(circType === 'single_ln') kvaV = parseFloat(vln) || 0;
+            else if(circType === 'single_llc') kvaV = parseFloat(vll) || 0;
+            else if(circType === 'single_ll') kvaV = parseFloat(vph) || 0;
+            else kvaV = parseFloat(vll) || 0; // three_wye, three_delta
+            const kvaFactor = (circType === 'three_wye' || circType === 'three_delta') ? Math.sqrt(3) : 1;
+            if(kvaV && loadsArr.length){
+              let sumI = 0;
+              // Exclude Neutral Current from KVA total (matches records page computation)
+              loadsArr.forEach(load => {
+                if((load.DESCRIPTION || load.description || '') !== 'Neutral Current') {
+                  sumI += parseFloat(load.value) || 0;
+                }
+              });
+              const total = kvaFactor * kvaV * sumI / 1000;
+              kvaTotal = total > 0 ? total.toFixed(3) : '';
+            }
+          }
+          // Full test section
+          const nameplate = document.getElementById('nameplate-power')?.value || '';
+          const meas_van = document.getElementById('meas-van')?.value || '';
+          const meas_vbn = document.getElementById('meas-vbn')?.value || '';
+          const meas_vcn = document.getElementById('meas-vcn')?.value || '';
+          const meas_ia = document.getElementById('meas-ia')?.value || '';
+          const meas_ib = document.getElementById('meas-ib')?.value || '';
+          const meas_ic = document.getElementById('meas-ic')?.value || '';
+          const pf_a = document.getElementById('pf-a')?.value || '';
+          const pf_b = document.getElementById('pf-b')?.value || '';
+          const pf_c = document.getElementById('pf-c')?.value || '';
+          // Summary
+          const phaseA = document.getElementById('sumA')?.textContent?.replace(/[^\d.\-]/g,'') || '';
+          const phaseB = document.getElementById('sumB')?.textContent?.replace(/[^\d.\-]/g,'') || '';
+          const phaseC = document.getElementById('sumC')?.textContent?.replace(/[^\d.\-]/g,'') || '';
+          const totalLoad = document.getElementById('sumTotal')?.textContent?.replace(/[^\d.\-]/g,'') || '';
+
+          const record = {
+            fileName: fileName.trim(), savedAt,
+            date, time, refId, branch, company, location, panel, mcb, mainV, wires,
+            conductedBy, witnessBy, certifiedBy, witnessTenant,
+            remarks, circType, vll, vln, vph,
+            vl1l2Ind, vl1l3Ind, vl2l3Ind, vl1nInd, vl2nInd, vl3nInd,
+            kvaTotal,
+            nameplate, meas_van, meas_vbn, meas_vcn, meas_ia, meas_ib, meas_ic, pf_a, pf_b, pf_c,
+            phaseA, phaseB, phaseC, totalLoad,
+            loads: loadsArr
+          };
+          const LB_KEY = 'epm_load_balancing_v1';
+          try {
+            let records = await DB.list(LB_KEY);
+            if(!Array.isArray(records)) records = [];
+            if(isEditMode && editRecordIndex >= 0 && editRecordIndex < records.length) {
+              const existing = records[editRecordIndex];
+              if (existing && existing.id) {
+                  await DB.update(LB_KEY, existing.id, record);
+              } else {
+                  // fallback: rewrite entire array
+                  records[editRecordIndex] = record;
+                  await fetch('api/bulk.php?collection='+encodeURIComponent(LB_KEY), {
+                      method:'POST', headers:{'Content-Type':'application/json'},
+                      body: JSON.stringify(records)
+                  });
+              }
+              alert('Record updated as "' + fileName.trim() + '"!');
+              isEditMode = false;
+              editRecordIndex = -1;
+              const url = new URL(window.location);
+              url.searchParams.delete('edit');
+              window.history.replaceState({}, '', url);
+              const h2 = document.querySelector('.form-card h2');
+              if(h2) h2.textContent = 'Load Balancing & Full Load Test Form';
+            } else {
+              // create new record
+              await DB.create(LB_KEY, record);
+              alert('Record saved as "' + fileName.trim() + '"! You can view it in the records list.');
+            }
+          } catch(e) {
+            alert('Failed to save record: ' + (e?.message||e));
+          }
+        }
+    // Simple client-side load balancer + full load test
+    const STORAGE_KEY = 'epm_load_balancer_form_v1';
+    let loads = [];
+    // Edit mode tracking
+    let isEditMode = false;
+    let editRecordIndex = -1;
+
+    // DOM refs
+    const circuitTypeEl = document.getElementById('circuit-type');
+    const phaseSelect = document.getElementById('lb-phase');
+    const lbBody = document.getElementById('lb-body');
+    const loadsCount = document.getElementById('loads-count');
+
+    // tabs
+    const tabBalance = document.getElementById('tab-balance');
+    const tabFull = document.getElementById('tab-fulltest');
+    const balanceSection = document.getElementById('balance-section');
+    const fulltestSection = document.getElementById('fulltest-section');
+
+    // load test refs
+    const runTestBtn = document.getElementById('run-test');
+
+    // initialize
+    function init(){
+      bindCircuitOptions();
+      loads = loadFromStorage();
+      renderLoads();
+      computeSummary();
+      attachEvents();
+      // load saved header meta
+      try{
+          const metaRaw = localStorage.getItem('lb_form_meta');
+            if(metaRaw){
+              const meta = JSON.parse(metaRaw);
+              if(meta.company) document.getElementById('company-name').value = meta.company;
+              if(meta.location) document.getElementById('location-name').value = meta.location;
+              if(meta.panel) document.getElementById('panel-board').value = meta.panel;
+              if(meta.branch) document.getElementById('branch-code').value = meta.branch;
+              if(meta.mcb) document.getElementById('mcb-capacity').value = meta.mcb;
+              if(meta.mainV) document.getElementById('main-voltage').value = meta.mainV;
+              if(meta.wires) document.getElementById('wire-size').value = meta.wires;
+              if(meta.conducted) document.getElementById('conducted-by').value = meta.conducted;
+              if(meta.witness) document.getElementById('witness-by').value = meta.witness;
+              if(meta.remarks) document.getElementById('remarks-input').value = meta.remarks;
+              if(meta.vll) document.getElementById('v-line-line').value = meta.vll;
+              if(meta.vln) document.getElementById('v-line-neutral').value = meta.vln;
+              if(meta.vph) document.getElementById('v-phase').value = meta.vph;
+            }
+      }catch(e){console.warn('Failed to load header meta', e);}
+      // Check for edit mode (coming from records page)
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const editParam = urlParams.get('edit');
+        if(editParam !== null) {
+          const editData = sessionStorage.getItem('lb_edit_record');
+          const editIdx = sessionStorage.getItem('lb_edit_index');
+          if(editData) {
+            const rec = JSON.parse(editData);
+            isEditMode = true;
+            editRecordIndex = parseInt(editIdx, 10) || 0;
+            // Populate header fields
+            if(rec.company) document.getElementById('company-name').value = rec.company;
+            if(rec.location) document.getElementById('location-name').value = rec.location;
+            if(rec.panel) document.getElementById('panel-board').value = rec.panel;
+            if(rec.branch) document.getElementById('branch-code').value = rec.branch;
+            if(rec.mcb) document.getElementById('mcb-capacity').value = rec.mcb;
+            if(rec.mainV) document.getElementById('main-voltage').value = rec.mainV;
+            if(rec.wires) document.getElementById('wire-size').value = rec.wires;
+            if(rec.conductedBy) document.getElementById('conducted-by').value = rec.conductedBy;
+            if(rec.witnessBy) document.getElementById('witness-by').value = rec.witnessBy;
+            if(rec.certifiedBy) document.getElementById('certified-by').value = rec.certifiedBy;
+            if(rec.witnessTenant) document.getElementById('witness-tenant').value = rec.witnessTenant;
+            if(rec.remarks) document.getElementById('remarks-input').value = rec.remarks;
+            // Circuit type & voltage
+            if(rec.circType) {
+              document.getElementById('circuit-type').value = rec.circType;
+              updatePhaseOptions();
+              applyVoltageFieldRules();
+            }
+            if(rec.vll) document.getElementById('v-line-line').value = rec.vll;
+            if(rec.vln) document.getElementById('v-line-neutral').value = rec.vln;
+            if(rec.vph) document.getElementById('v-phase').value = rec.vph;
+            // Individual per-column voltages
+            if(rec.vl1l2Ind) document.getElementById('v-l1l2-ind').value = rec.vl1l2Ind;
+            if(rec.vl1l3Ind) document.getElementById('v-l1l3-ind').value = rec.vl1l3Ind;
+            if(rec.vl2l3Ind) document.getElementById('v-l2l3-ind').value = rec.vl2l3Ind;
+            if(rec.vl1nInd)  document.getElementById('v-l1n-ind').value = rec.vl1nInd;
+            if(rec.vl2nInd)  document.getElementById('v-l2n-ind').value = rec.vl2nInd;
+            if(rec.vl3nInd)  document.getElementById('v-l3n-ind').value = rec.vl3nInd;
+            // Full load test fields
+            if(rec.nameplate) document.getElementById('nameplate-power').value = rec.nameplate;
+            if(rec.meas_van) document.getElementById('meas-van').value = rec.meas_van;
+            if(rec.meas_vbn) document.getElementById('meas-vbn').value = rec.meas_vbn;
+            if(rec.meas_vcn) document.getElementById('meas-vcn').value = rec.meas_vcn;
+            if(rec.meas_ia) document.getElementById('meas-ia').value = rec.meas_ia;
+            if(rec.meas_ib) document.getElementById('meas-ib').value = rec.meas_ib;
+            if(rec.meas_ic) document.getElementById('meas-ic').value = rec.meas_ic;
+            if(rec.pf_a) document.getElementById('pf-a').value = rec.pf_a;
+            if(rec.pf_b) document.getElementById('pf-b').value = rec.pf_b;
+            if(rec.pf_c) document.getElementById('pf-c').value = rec.pf_c;
+            // Restore loads array
+            if(rec.loads && Array.isArray(rec.loads)) {
+              loads = rec.loads;
+              saveToStorage();
+              renderLoads();
+              computeSummary();
+            }
+            // Clean up sessionStorage
+            sessionStorage.removeItem('lb_edit_record');
+            sessionStorage.removeItem('lb_edit_index');
+            // Update page title to indicate edit mode
+            const h2 = document.querySelector('.form-card h2');
+            if(h2) h2.textContent = 'Edit Load Balancing Record';
+          }
+        }
+      } catch(e) { console.warn('Edit mode init failed', e); }
+    }
+
+    function bindCircuitOptions(){ 
+      updatePhaseOptions(); 
+      applyVoltageFieldRules();
+      circuitTypeEl.addEventListener('change', ()=>{ 
+        updatePhaseOptions(); 
+        applyVoltageFieldRules();
+        renderLoads(); 
+        computeSummary(); 
+      }); 
+    }
+
+    function applyVoltageFieldRules(){
+      const vLL = document.getElementById('v-line-line');
+      const vLN = document.getElementById('v-line-neutral');
+      const vPh = document.getElementById('v-phase');
+      const circType = circuitTypeEl.value;
+
+      // Reset all fields first
+      [vLL, vLN, vPh].forEach(field => {
+        if(field){
+          field.disabled = false;
+          field.style.background = '';
+        }
+      });
+
+      // Individual voltage groups
+      const indVLLGrp = document.getElementById('ind-vll-group');
+      const indVLNGrp = document.getElementById('ind-vln-group');
+      function _disF(el){ if(el){ el.disabled=true; el.style.background='#161924'; el.value=''; } }
+      function _enF(el){ if(el){ el.disabled=false; el.style.background=''; } }
+      function _showG(el){ if(el) el.style.display='flex'; }
+      function _hideG(el){ if(el) el.style.display='none'; }
+
+      // Apply rules based on circuit type
+      if(circType === 'single_ln'){
+        _disF(vLL); _enF(vLN); _disF(vPh);
+        _hideG(indVLLGrp); _hideG(indVLNGrp);
+      } else if(circType === 'single_llc'){
+        _enF(vLL); _disF(vLN); _disF(vPh);
+        _hideG(indVLLGrp); _hideG(indVLNGrp);
+      } else if(circType === 'single_ll'){
+        _disF(vLN); _disF(vLL); _enF(vPh);
+        _hideG(indVLLGrp); _hideG(indVLNGrp);
+      } else if(circType === 'three_wye'){
+        _enF(vLL); _enF(vLN); _disF(vPh);
+        _showG(indVLLGrp); _showG(indVLNGrp);
+      } else if(circType === 'three_delta'){
+        _enF(vLL); _disF(vLN); _disF(vPh);
+        _showG(indVLLGrp); _hideG(indVLNGrp);
+      }
+    }
+
+    function updatePhaseOptions(){
+      const t = circuitTypeEl.value; phaseSelect.innerHTML = '';
+      if(t==='single_ln'){ ['L1_N'].forEach(x=> addPhaseOption(x)); }
+      else if(t==='single_llc'){ ['L12'].forEach(x=> addPhaseOption(x)); }  
+      else if(t==='single_ll'){ ['L1','L2'].forEach(x=> addPhaseOption(x)); }
+      else if(t==='three_wye'){ ['AN','BN','CN','N'].forEach(x=> addPhaseOption(x)); }
+      else if(t==='three_delta'){ ['AB','BC','CA'].forEach(x=> addPhaseOption(x)); }
+    }
+    function addPhaseOption(val){ const o = document.createElement('option'); o.value = val; o.textContent = val; phaseSelect.appendChild(o); }
+
+    function loadFromStorage(){ try{ const raw = localStorage.getItem(STORAGE_KEY); return raw ? JSON.parse(raw) : []; }catch(e){console.error(e); return []; } }
+    function saveToStorage(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(loads)); }catch(e){console.error(e);} }
+
+    function renderLoads(){ lbBody.innerHTML = ''; loads.forEach((l,i)=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${escapeHTML(l.name)}</td><td>${Number(l.value).toFixed(2)}</td><td>${l.phase}</td><td><button data-i="${i}">Delete</button></td>`;
+      lbBody.appendChild(tr);
+      tr.querySelector('button').addEventListener('click', ()=>{ loads.splice(i,1); saveToStorage(); renderLoads(); computeSummary(); });
+    });
+      loadsCount.textContent = `${loads.length} loads`;
+    }
+
+    function escapeHTML(s){ return String(s||'').replace(/[&<>\\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+    function attachEvents(){
+      // Auto-fill load name when phase N is selected for Three Phase Wye
+      phaseSelect.addEventListener('change', ()=>{
+        const circType = circuitTypeEl.value;
+        const phase = phaseSelect.value;
+        const loadNameField = document.getElementById('lb-name');
+        if(circType === 'three_wye' && phase === 'N'){
+          loadNameField.value = 'Neutral Current';
+        }
+      });
+
+      document.getElementById('lb-add').addEventListener('click', ()=>{
+        const name = document.getElementById('lb-name').value.trim();
+        const val = parseFloat(document.getElementById('lb-value').value || '0');
+        const phase = phaseSelect.value;
+        if(!name || isNaN(val) || val<=0){ alert('Enter a valid name and positive A value'); return; }
+        loads.unshift({name, value: Number(val), phase}); saveToStorage(); renderLoads(); computeSummary(); document.getElementById('lb-name').value=''; document.getElementById('lb-value').value='';
+      });
+
+      document.getElementById('lb-clear').addEventListener('click', ()=>{ if(confirm('Clear all loads?')){ loads=[]; saveToStorage(); renderLoads(); computeSummary(); } });
+
+      document.getElementById('lb-export').addEventListener('click', ()=>{ exportCSV(); });
+      document.getElementById('lb-import').addEventListener('click', ()=> document.getElementById('file-input').click());
+      document.getElementById('file-input').addEventListener('change', (ev)=>{ const f = ev.target.files[0]; if(f) importCSVFile(f); ev.target.value=''; });
+
+      document.getElementById('apply-suggestion').addEventListener('click', applyFirstSuggestion);
+      document.getElementById('export-full').addEventListener('click', ()=>{ exportReport(); });
+      document.getElementById('print-form').addEventListener('click', generatePrintableForm);
+      // header meta save handlers
+      ['company-name','location-name','panel-board','branch-code','mcb-capacity','main-voltage','wire-size','v-line-line','v-line-neutral','v-phase','remarks-input','conducted-by','witness-by'].forEach(id=>{
+        const el = document.getElementById(id);
+        if(!el) return;
+        el.addEventListener('input', ()=>{
+          try{
+            const meta = { company: document.getElementById('company-name').value || '', location: document.getElementById('location-name').value || '', panel: document.getElementById('panel-board').value || '', branch: document.getElementById('branch-code').value || '', mcb: document.getElementById('mcb-capacity').value || '', mainV: document.getElementById('main-voltage').value || '', wires: document.getElementById('wire-size').value || '', conducted: document.getElementById('conducted-by').value || '', witness: document.getElementById('witness-by').value || '', vll: document.getElementById('v-line-line').value || '', vln: document.getElementById('v-line-neutral').value || '', vph: document.getElementById('v-phase').value || '', remarks: document.getElementById('remarks-input').value || '' };
+            localStorage.setItem('lb_form_meta', JSON.stringify(meta));
+          }catch(e){console.warn('Failed to save header meta', e);}        
+        });
+      });
+
+      tabBalance.addEventListener('click', ()=>{ tabBalance.classList.add('active'); tabFull.classList.remove('active'); balanceSection.style.display='block'; fulltestSection.style.display='none'; });
+      tabFull.addEventListener('click', ()=>{ tabFull.classList.add('active'); tabBalance.classList.remove('active'); balanceSection.style.display='none'; fulltestSection.style.display='block'; });
+
+      // full test
+      runTestBtn.addEventListener('click', runFullLoadTest);
+      document.getElementById('reset-test').addEventListener('click', ()=>{ document.getElementById('nameplate-power').value=''; document.getElementById('meas-van').value=''; document.getElementById('meas-vbn').value=''; document.getElementById('meas-vcn').value=''; document.getElementById('meas-ia').value=''; document.getElementById('meas-ib').value=''; document.getElementById('meas-ic').value=''; document.getElementById('pf-a').value=''; document.getElementById('pf-b').value=''; document.getElementById('pf-c').value=''; document.getElementById('res-pa').textContent='0 kW'; document.getElementById('res-pb').textContent='0 kW'; document.getElementById('res-pc').textContent='0 kW'; document.getElementById('res-total').textContent='0 kW'; document.getElementById('res-pct').textContent='0 %'; });
+    }
+
+    function computeSummary(){
+      // Compute per-phase totals using simple mapping: phases can be A/B/C or AB/BC/CA or L1/L2
+      const t = circuitTypeEl.value;
+      const totals = {};
+      // initialize possible keys
+      if(t==='three_wye'){ ['AN','BN','CN','N'].forEach(k=>totals[k]=0); }
+      else if(t==='three_delta'){ ['AB','BC','CA'].forEach(k=>totals[k]=0); }
+      else if(t==='single_ll'){ ['L1','L2'].forEach(k=>totals[k]=0); }
+      else { ['L1'].forEach(k=>totals[k]=0); }
+
+      loads.forEach(l=>{ if(totals[l.phase]===undefined) totals[l.phase]=0; totals[l.phase]+=Number(l.value); });
+
+      // fill UI
+      const keys = Object.keys(totals);
+      const A = totals[keys[0]]||0; const B = totals[keys[1]]||0; const C = totals[keys[2]]||0;
+      document.getElementById('sumA').textContent = (A||0).toFixed(2);
+      document.getElementById('sumB').textContent = (B||0).toFixed(2);
+      document.getElementById('sumC').textContent = (C||0).toFixed(2);
+      // Update summary labels to reflect delta naming when applicable
+      try{
+        const barLabels = document.querySelectorAll('.bars .label');
+        if(barLabels && barLabels.length>=3){
+          if(t === 'three_delta'){
+            barLabels[0].childNodes[0].textContent = 'L1L2: ';
+            barLabels[1].childNodes[0].textContent = 'L1L3: ';
+            barLabels[2].childNodes[0].textContent = 'L2L3: ';
+          } else {
+            barLabels[0].childNodes[0].textContent = 'A: ';
+            barLabels[1].childNodes[0].textContent = 'B: ';
+            barLabels[2].childNodes[0].textContent = 'C: ';
+          }
+        }
+      }catch(e){/* ignore if DOM shape differs */}
+      const total = Object.values(totals).reduce((s,v)=>s+v,0);
+      document.getElementById('sumTotal').textContent = total.toFixed(2) + ' A';
+      const avg = total / Math.max(3, keys.length);
+      document.getElementById('sumAvg').textContent = avg.toFixed(2) + ' A';
+      const maxDev = Math.max(...Object.values(totals).map(v=>Math.abs(v-avg)));
+      const imb = avg>0 ? (maxDev/avg*100) : 0;
+      document.getElementById('sumImb').textContent = imb.toFixed(1) + ' %';
+
+      // update bars using largest of present phases
+      const maxVal = Math.max(...Object.values(totals), 1);
+      document.getElementById('barA').style.height = Math.round(((A||0)/maxVal)*100) + '%';
+      document.getElementById('barB').style.height = Math.round(((B||0)/maxVal)*100) + '%';
+      document.getElementById('barC').style.height = Math.round(((C||0)/maxVal)*100) + '%';
+
+      // suggestions (attempt to move single loads from heaviest to lightest)
+      const phaseList = Object.keys(totals);
+      const ordered = phaseList.map(p=>({p,v:totals[p]||0})).sort((a,b)=>b.v-a.v);
+      const suggestions = [];
+      if(ordered.length>=2){
+        const heavy = ordered[0].p; const light = ordered[ordered.length-1].p;
+        const candidateLoads = loads.filter(l=>l.phase===heavy).slice().sort((a,b)=>b.value-a.value);
+        let curTotals = Object.assign({}, totals);
+        for(const c of candidateLoads){
+          const newTotals = Object.assign({}, curTotals);
+          newTotals[heavy] -= c.value; newTotals[light] += c.value;
+          const beforeRange = Math.max(...Object.values(curTotals)) - Math.min(...Object.values(curTotals));
+          const afterRange = Math.max(...Object.values(newTotals)) - Math.min(...Object.values(newTotals));
+          if(afterRange < beforeRange){ suggestions.push({name:c.name,value:c.value,from:heavy,to:light}); curTotals = newTotals; }
+          if(suggestions.length>=5) break;
+        }
+      }
+      const sugEl = document.getElementById('suggestions');
+      if(suggestions.length===0) sugEl.textContent = 'No single-load moves found that improve balance significantly.';
+      else{ sugEl.innerHTML = ''; suggestions.forEach((s,i)=>{ const d = document.createElement('div'); d.innerHTML = `${i+1}. Move <strong>${escapeHTML(s.name)}</strong> (${s.value} A) from ${s.from} -> ${s.to}`; sugEl.appendChild(d); }); }
+      // save suggestions to window for quick apply
+      window._lb_suggestions = suggestions;
+    }
+
+    function applyFirstSuggestion(){ const s = (window._lb_suggestions||[])[0]; if(!s) return alert('No suggestion available'); const idx = loads.findIndex(l=> l.name===s.name && l.value===s.value && l.phase===s.from); if(idx>=0){ loads[idx].phase = s.to; saveToStorage(); renderLoads(); computeSummary(); } }
+
+    // export CSV
+    function exportCSV(){
+      // include header/meta info at top of CSV (as comment lines) so exports reflect printable header
+      const company = document.getElementById('company-name') ? document.getElementById('company-name').value : '';
+      const location = document.getElementById('location-name') ? document.getElementById('location-name').value : '';
+      const panel = document.getElementById('panel-board') ? document.getElementById('panel-board').value : '';
+      const branch = document.getElementById('branch-code') ? document.getElementById('branch-code').value : '';
+      const mcb = document.getElementById('mcb-capacity') ? document.getElementById('mcb-capacity').value : '';
+      const mainV = document.getElementById('main-voltage') ? document.getElementById('main-voltage').value : '';
+      const wires = document.getElementById('wire-size') ? document.getElementById('wire-size').value : '';
+
+      const headerLines = [
+        `# Company: ${company}`,
+        `# Location: ${location}`,
+        `# MAIN CIRCUIT DETAILS`,
+        `# Panel: ${panel}`,
+        `# Branch: ${branch}`,
+        `# MCB: ${mcb} A`,
+        `# Main V: ${mainV} V`,
+        `# Wires: ${wires}`,
+        ''
+      ];
+
+      const rows = [['name','value','phase']];
+      loads.forEach(l=> rows.push([`"${String(l.name).replace(/"/g,'""') }"`, String(l.value), l.phase]));
+      const csvContent = headerLines.join('\n') + rows.map(r=>r.join(',')).join('\n');
+      const blob = new Blob([csvContent],{type:'text/csv'});
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'loads.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(a.href);
+    }
+
+    function importCSVFile(file){ const reader = new FileReader(); reader.onload = e=>{ const text = e.target.result.replace(/\r/g,''); const lines = text.split('\n').map(s=>s.trim()).filter(Boolean); if(lines.length<=1) return alert('No data'); lines.shift(); const imported=[]; lines.forEach(line=>{ const parts = line.split(','); if(parts.length<3) return; let name = parts[0].replace(/^"|"$/g,'').trim(); const value = parseFloat(parts[1]); const phase = (parts[2]||'').trim(); if(!isNaN(value)) imported.push({name,value,phase}); }); if(imported.length){ loads = imported.concat(loads); saveToStorage(); renderLoads(); computeSummary(); } }; reader.readAsText(file); }
+
+    // export simple report (CSV of totals + suggestions as text)
+    function exportReport(){
+      const company = document.getElementById('company-name') ? document.getElementById('company-name').value : '';
+      const location = document.getElementById('location-name') ? document.getElementById('location-name').value : '';
+      const panel = document.getElementById('panel-board') ? document.getElementById('panel-board').value : '';
+      const branch = document.getElementById('branch-code') ? document.getElementById('branch-code').value : '';
+      const mcb = document.getElementById('mcb-capacity') ? document.getElementById('mcb-capacity').value : '';
+      const mainV = document.getElementById('main-voltage') ? document.getElementById('main-voltage').value : '';
+      const wires = document.getElementById('wire-size') ? document.getElementById('wire-size').value : '';
+
+      const totals = {A:document.getElementById('sumA').textContent, B:document.getElementById('sumB').textContent, C:document.getElementById('sumC').textContent};
+      let text = '';
+      text += `Company: ${company}\n`;
+      text += `Location: ${location}\n`;
+      text += `MAIN CIRCUIT DETAILS\n`;
+      text += `Panel: ${panel}\n`;
+      text += `Branch: ${branch}\n`;
+      text += `MCB: ${mcb} A\n`;
+      text += `Main V: ${mainV} V\n`;
+      text += `Wires: ${wires}\n\n`;
+
+      text += 'Totals:\n';
+      text += `A: ${totals.A} A\nB: ${totals.B} A\nC: ${totals.C} A\n\n`;
+      text += 'Suggestions:\n' + (document.getElementById('suggestions').innerText||'') + '\n\n';
+      text += 'Remarks:\n' + (document.getElementById('remarks-input') ? document.getElementById('remarks-input').value : '') + '\n';
+
+      const blob = new Blob([text],{type:'text/plain'});
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'load_report.txt'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(a.href);
+    }
+
+    async function generatePrintableForm(){
+      // Build printable HTML matching the supplied form layout
+      const title = 'LOAD BALANCING';
+      const dateStr = new Date().toLocaleDateString();
+      const company = document.getElementById('company-name') ? document.getElementById('company-name').value : '';
+      const location = document.getElementById('location-name') ? document.getElementById('location-name').value : '';
+      const panel = document.getElementById('panel-board') ? document.getElementById('panel-board').value : '';
+      const branch = document.getElementById('branch-code') ? document.getElementById('branch-code').value : '';
+      const circType = circuitTypeEl ? circuitTypeEl.value : '';
+      
+      // Only get voltage values from enabled fields based on circuit type
+      let vll = '', vln = '', vph = '';
+      const vLLField = document.getElementById('v-line-line');
+      const vLNField = document.getElementById('v-line-neutral');
+      const vPhField = document.getElementById('v-phase');
+      
+      if(vLLField && !vLLField.disabled) vll = vLLField.value;
+      if(vLNField && !vLNField.disabled) vln = vLNField.value;
+      if(vPhField && !vPhField.disabled) vph = vPhField.value;
+
+      // Read individual per-column voltages (three-phase only)
+      let vl1l2Ind='', vl1l3Ind='', vl2l3Ind='', vl1nInd='', vl2nInd='', vl3nInd='';
+      const _indVLLGrp = document.getElementById('ind-vll-group');
+      const _indVLNGrp = document.getElementById('ind-vln-group');
+      if(_indVLLGrp && _indVLLGrp.style.display !== 'none'){
+        vl1l2Ind = (document.getElementById('v-l1l2-ind')||{}).value || '';
+        vl1l3Ind = (document.getElementById('v-l1l3-ind')||{}).value || '';
+        vl2l3Ind = (document.getElementById('v-l2l3-ind')||{}).value || '';
+      }
+      if(_indVLNGrp && _indVLNGrp.style.display !== 'none'){
+        vl1nInd = (document.getElementById('v-l1n-ind')||{}).value || '';
+        vl2nInd = (document.getElementById('v-l2n-ind')||{}).value || '';
+        vl3nInd = (document.getElementById('v-l3n-ind')||{}).value || '';
+      }
+
+      // Format amps: zero → blank (no-zeros rule)
+      const fmtA = v => { const n=parseFloat(v); return (n&&n>0)?n.toFixed(2):''; };
+
+      // KVA computation per load row
+      function rowKVA(amps, cType, vllV, vlnV, vphV){
+        const I=parseFloat(amps)||0; if(!I) return '';
+        let V=0;
+        if(cType==='single_ln') V=parseFloat(vlnV)||0;
+        else if(cType==='single_llc') V=parseFloat(vllV)||0;
+        else if(cType==='single_ll') V=parseFloat(vphV)||0;
+        else V=parseFloat(vllV)||0; // three_wye, three_delta
+        if(!V) return '';
+        const factor=(cType==='three_wye'||cType==='three_delta')?Math.sqrt(3):1;
+        return (factor*V*I/1000).toFixed(3);
+      }
+
+      // printable reference id (format: LB-YYYYMMDD-HHMMSS)
+      const _nowRef = new Date();
+      const _pad = n => String(n).padStart(2, '0');
+      const refId = 'LB-' + _nowRef.getFullYear() + _pad(_nowRef.getMonth()+1) + _pad(_nowRef.getDate()) + '-' + _pad(_nowRef.getHours()) + _pad(_nowRef.getMinutes()) + _pad(_nowRef.getSeconds());
+
+      // prepare rows: Branch circuit numbered rows
+      // (Main circuit label has been moved to the header above the Panel field)
+      // keep the same visible row count as before by adding 1
+      const maxRows = Math.max(24, loads.length) + 1;
+      // create arrays for line currents
+      const rows = [];
+
+      // populate branch rows with loads in reverse order (last added appears first)
+      const reversedLoads = loads.slice().reverse();
+      for(let i=0;i<maxRows;i++){
+        const load = reversedLoads[i];
+        const desc = load ? load.name : '';
+        // determine line currents placement
+        let l1='', l2='', l3='', n='';
+        if(load){
+          const ph = String(load.phase||'').toUpperCase().replace(/\s+/g,'');
+          if(circType === 'three_delta'){
+            // Explicit mapping for delta phases to printed columns:
+            // AB -> L1L2 (col1), CA -> L1L3 (col2), BC -> L2L3 (col3)
+            if(ph==='AB' || ph==='BA') l1 = fmtA(load.value);
+            else if(ph==='CA' || ph==='AC') l2 = fmtA(load.value);
+            else if(ph==='BC' || ph==='CB') l3 = fmtA(load.value);
+          } else {
+            if(ph.indexOf('A')!==-1 || ph.indexOf('L1')!==-1) l1 = fmtA(load.value);
+            if(ph.indexOf('B')!==-1 || ph.indexOf('L2')!==-1) l2 = fmtA(load.value);
+            if(ph.indexOf('C')!==-1 || ph.indexOf('L3')!==-1 || ph.indexOf('3')!==-1) l3 = fmtA(load.value);
+            if(ph.indexOf('N')!==-1) n = fmtA(load.value);
+          }
+        }
+        const hasCurrent = !!(l1 || l2 || l3);
+        // Zero-aware voltage fallback: use individual if > 0, else fall back to main voltage
+        const _vResolve = (ind, main) => (parseFloat(ind) > 0 ? ind : main) || '';
+        // Per-circuit-type voltage column assignment
+        let v_l12_val='', v_l13_val='', v_l23_val='', ph_l1n_val='', ph_l2n_val='', ph_l3n_val='';
+        if(hasCurrent){
+          // Line voltages
+          if(circType==='three_wye' || circType==='three_delta'){
+            v_l12_val = _vResolve(vl1l2Ind, vll);
+            v_l13_val = _vResolve(vl1l3Ind, vll);
+            v_l23_val = _vResolve(vl2l3Ind, vll);
+          } else if(circType==='single_llc' || circType==='single_ll'){
+            v_l12_val = vll || '';
+          }
+          // Phase voltages
+          if(circType==='single_ln'){
+            ph_l1n_val = vln || '';
+          } else if(circType==='single_ll'){
+            ph_l1n_val = vph || ''; ph_l2n_val = vph || '';
+          } else if(circType==='three_wye'){
+            ph_l1n_val = _vResolve(vl1nInd, vln);
+            ph_l2n_val = _vResolve(vl2nInd, vln);
+            ph_l3n_val = _vResolve(vl3nInd, vln);
+          }
+          // single_llc and three_delta: no phase voltages (remain '')
+        }
+        const kva = load ? rowKVA(load.value, circType, vll, vln, vph) : '';
+        rows.push({description: desc, n, l1, l2, l3, v_l12:v_l12_val, v_l13:v_l13_val, v_l23:v_l23_val, ph_l1n:ph_l1n_val, ph_l2n:ph_l2n_val, ph_l3n:ph_l3n_val, kva, remarks:''});
+      }
+
+      // totals for L1,L2,L3
+      let totL1=0, totL2=0, totL3=0; totN=0;
+      rows.forEach(r=>{ totL1 += parseFloat(r.l1||0); totL2 += parseFloat(r.l2||0); totL3 += parseFloat(r.l3||0); totN += parseFloat(r.n||0) });
+
+      // Calculate neutral current for Three Phase Wye using vector addition
+      let neutralCurrentDisplay = totN.toFixed(2);
+      let neutralCurrentMagnitude = totN;
+      let totalRowRemark = '';
+      
+      if(circType === 'three_wye'){
+        // Convert phase currents to complex form with phase angles
+        // L1: 0°, L2: 120°, L3: -120° (or 240°)
+        const deg2rad = Math.PI / 180;
+        
+        // L1 at 0°: I_L1 * (cos(0) + j*sin(0))
+        const L1_real = totL1 * Math.cos(0 * deg2rad);
+        const L1_imag = totL1 * Math.sin(0 * deg2rad);
+        
+        // L2 at 120°: I_L2 * (cos(120) + j*sin(120))
+        const L2_real = totL2 * Math.cos(120 * deg2rad);
+        const L2_imag = totL2 * Math.sin(120 * deg2rad);
+        
+        // L3 at -120°: I_L3 * (cos(-120) + j*sin(-120))
+        const L3_real = totL3 * Math.cos(-120 * deg2rad);
+        const L3_imag = totL3 * Math.sin(-120 * deg2rad);
+        
+        // Sum the complex components
+        const In_real = L1_real + L2_real + L3_real;
+        const In_imag = L1_imag + L2_imag + L3_imag;
+        
+        // Convert to polar form: magnitude and angle
+        const In_magnitude = Math.sqrt(In_real * In_real + In_imag * In_imag);
+        const In_angle = Math.atan2(In_imag, In_real) * (180 / Math.PI);
+        
+        // Format as "I∠φ"
+        neutralCurrentDisplay = `${In_magnitude.toFixed(2)}∠${In_angle.toFixed(1)}°`;
+        neutralCurrentMagnitude = In_magnitude;
+        
+        // Check if circuit is balanced or unbalanced
+        const avgPhaseCurrent = (totL1 + totL2 + totL3) / 3;
+        if(In_magnitude > avgPhaseCurrent){
+          totalRowRemark = 'Unbalanced Circuit';
+        } else {
+          totalRowRemark = 'Balanced';
+        }
+      } else if(circType === 'three_delta'){
+        // For Three Phase Delta: Check if any line current deviates more than 20% from average
+        const avgLineCurrent = (totL1 + totL2 + totL3) / 3;
+        const threshold = avgLineCurrent * 0.20; // 20% threshold
+        
+        const deviationL1 = Math.abs(totL1 - avgLineCurrent);
+        const deviationL2 = Math.abs(totL2 - avgLineCurrent);
+        const deviationL3 = Math.abs(totL3 - avgLineCurrent);
+        
+        if(deviationL1 > threshold || deviationL2 > threshold || deviationL3 > threshold){
+          totalRowRemark = 'Unbalanced';
+        } else {
+          totalRowRemark = 'Balanced';
+        }
+      }
+
+      // try to reference the images folder next to this page for printable background
+      const _baseHref = (function(){ try{ const href = location.href; return href.replace(/[^\/]*$/,''); }catch(e){ return './'; } })();
+      const printableBg = _baseHref + 'images/toms_background.png';
+      // attempt to fetch the image and inline as data URL to avoid blob/origin issues
+      let bgCssUrl = printableBg;
+      try{
+        const resp = await fetch(printableBg);
+        if(resp.ok){
+          const iblob = await resp.blob();
+          const buf = await iblob.arrayBuffer();
+          const bytes = new Uint8Array(buf);
+          // convert to binary string in chunks to avoid stack limits
+          let binary = '';
+          const chunk = 0x8000;
+          for(let i=0;i<bytes.length;i+=chunk){
+            const sub = bytes.subarray(i, i+chunk);
+            binary += String.fromCharCode.apply(null, Array.from(sub));
+          }
+          const b64 = btoa(binary);
+          bgCssUrl = `data:${iblob.type};base64,${b64}`;
+        }
+      }catch(e){ /* fallback to printableBg path */ }
+
+      const html = [];
+      html.push('<!doctype html><html><head><meta charset="utf-8"><title>Printable Load Balancing Form</title>');
+      html.push('<style>@media print{@page{size:landscape;margin:10mm 12mm} #printBtn{display:none!important} html,body{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important} body{border:3px solid #000!important;-webkit-box-decoration-break:clone!important;box-decoration-break:clone!important}}body{font-family:Arial,Helvetica,sans-serif;padding:12px;border:2px solid #000;-webkit-box-decoration-break:clone;box-decoration-break:clone;background:url("'+ bgCssUrl + '") no-repeat center top/cover}table{border-collapse:collapse;width:100%}th,td{border:1px solid #000;padding:6px;font-size:12px;color:#000}th{background:#eee;text-align:center;font-weight:900;color:#000}td.center{text-align:center} .small{font-size:11px}</style>');
+      html.push('</head><body>');
+      html.push(`<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px"><div><strong>${escapeHtml(company || '')}</strong><br><span class="small">${escapeHtml(location || '')}</span><br><span class="small"><strong>MAIN CIRCUIT DETAILS</strong></span><br><span class="small">Panel: ${escapeHtml(panel || '')}</span><br><span class="small">Branch: ${escapeHtml(branch || '')}</span><br><span class="small">MCB: ${escapeHtml(String(document.getElementById('mcb-capacity') ? document.getElementById('mcb-capacity').value : '') || '')} A</span><br><span class="small">Main V: ${escapeHtml(String(document.getElementById('main-voltage') ? document.getElementById('main-voltage').value : '') || '')} V</span><br><span class="small">Wires: ${escapeHtml(String(document.getElementById('wire-size') ? document.getElementById('wire-size').value : '') || '')}</span></div><div><strong>${title}</strong><br>Date: ${dateStr}<br>Ref: ${escapeHtml(refId)}</div></div>`);
+
+      // determine header labels for line currents (adjust for delta and single phase circuits)
+      let lineLabels;
+      if(circType === 'three_delta'){
+        lineLabels = ['L1L2','L1L3','L2L3'];
+      } else if(circType === 'single_llc'){
+        lineLabels = ['L1L2','L2','L3','N'];
+      } else {
+        lineLabels = ['L1','L2','L3','N'];
+      }
+
+      html.push('<table>');
+      html.push('<thead>');
+      html.push('<tr>');
+      html.push('<th rowspan="2">DESCRIPTION</th>');
+      // For delta, use 3 columns (no N), for others use 4 columns
+      const lineCurrentColspan = (circType === 'three_delta') ? '3' : '4';
+      html.push(`<th colspan="${lineCurrentColspan}">LINE CURRENT (AMPS)</th>`);
+      html.push('<th colspan="3">LINE VOLTAGE (VOLTS)</th>');
+      html.push('<th colspan="3">PHASE VOLTAGE (VOLTS)</th>');
+      html.push('<th rowspan="2">KVA</th>');
+      html.push('<th rowspan="2">REMARKS</th>');
+      html.push('</tr>');
+      html.push('<tr>');
+      // For delta: only 3 columns, for others: 4 columns including N
+      if(circType === 'three_delta'){
+        html.push(`<th>${lineLabels[0]}</th><th>${lineLabels[1]}</th><th>${lineLabels[2]}</th>`);
+      } else {
+        html.push(`<th>${lineLabels[0]}</th><th>${lineLabels[1]}</th><th>${lineLabels[2]}</th><th>${lineLabels[3]}</th>`);
+      }
+      html.push('<th>V_L1L2</th><th>V_L1L3</th><th>V_L2L3</th>');
+      html.push('<th>L1-N</th><th>L2-N</th><th>L3-N</th>');
+      html.push('</tr>');
+      html.push('</thead>');
+      html.push('<tbody>');
+
+      // render rows
+      rows.forEach((r, idx)=>{
+        // Skip empty rows (no description and no values)
+        const hasData = r.description || r.l1 || r.l2 || r.l3 || r.n || r.v_l12 || r.v_l13 || r.v_l23 || r.ph_l1n || r.ph_l2n || r.ph_l3n || r.remarks;
+        if(!hasData) return;
+        
+        html.push('<tr>');
+        html.push(`<td>${escapeHtml(r.description)}</td>`);
+        html.push(`<td class="center">${r.l1||''}</td>`);
+        html.push(`<td class="center">${r.l2||''}</td>`);
+        html.push(`<td class="center">${r.l3||''}</td>`);
+        // Only show N column for non-delta circuits
+        if(circType !== 'three_delta'){
+          html.push(`<td class="center">${r.n||''}</td>`);
+        }
+        // For single phase line-to-line combined, only show V_L1L2
+        if(circType === 'single_llc'){
+          html.push(`<td class="center">${r.v_l12||''}</td>`);
+          html.push(`<td class="center"></td>`);
+          html.push(`<td class="center"></td>`);
+        } else {
+          html.push(`<td class="center">${r.v_l12||''}</td>`);
+          html.push(`<td class="center">${r.v_l13||''}</td>`);
+          html.push(`<td class="center">${r.v_l23||''}</td>`);
+        }
+        // For single phase line-to-neutral, only show L1-N phase voltage
+        if(circType === 'single_ln'){
+          html.push(`<td class="center">${r.ph_l1n||''}</td>`);
+          html.push(`<td class="center"></td>`);
+          html.push(`<td class="center"></td>`);
+        } else if(circType === 'single_ll'){
+          // For single phase line-to-line split, show L1-N and L2-N only
+          html.push(`<td class="center">${r.ph_l1n||''}</td>`);
+          html.push(`<td class="center">${r.ph_l2n||''}</td>`);
+          html.push(`<td class="center"></td>`);
+        } else if(circType === 'three_delta'){
+          // For three phase delta, don't show phase-to-neutral voltages
+          html.push(`<td class="center"></td>`);
+          html.push(`<td class="center"></td>`);
+          html.push(`<td class="center"></td>`);
+        } else {
+          html.push(`<td class="center">${r.ph_l1n||''}</td>`);
+          html.push(`<td class="center">${r.ph_l2n||''}</td>`);
+          html.push(`<td class="center">${r.ph_l3n||''}</td>`);
+        }
+        
+        // Check for suspected harmonics in Neutral Current row for Three Phase Wye
+        let rowRemark = r.remarks || '';
+        if(circType === 'three_wye' && r.description === 'Neutral Current' && r.n){
+          const measuredNeutral = parseFloat(r.n);
+          if(measuredNeutral > neutralCurrentMagnitude){
+            rowRemark = 'Suspected Harmonics';
+          }
+        }
+        
+        html.push(`<td class="center">${r.kva||''}</td>`);
+        html.push(`<td class="center">${rowRemark}</td>`);
+        html.push('</tr>');
+      });
+
+      // totals row
+      html.push('<tr>');
+      html.push('<td style="text-align:right"><strong>Total</strong></td>');
+      html.push(`<td class="center"><strong>${totL1.toFixed(2)}</strong></td>`);
+      html.push(`<td class="center"><strong>${totL2.toFixed(2)}</strong></td>`);
+      html.push(`<td class="center"><strong>${totL3.toFixed(2)}</strong></td>`);
+      // Only show N column for non-delta circuits
+      if(circType !== 'three_delta'){
+        html.push(`<td class="center"><strong>${neutralCurrentDisplay}</strong></td>`);
+      }
+      html.push('<td></td><td></td><td></td><td></td><td></td><td></td>');
+      let totKVA = 0; rows.forEach(r=>{ if(r.kva) totKVA += parseFloat(r.kva)||0; });
+      html.push(`<td class="center"><strong>${totKVA > 0 ? totKVA.toFixed(3) : ''}</strong></td>`);
+      html.push(`<td class="center"><strong>${totalRowRemark}</strong></td>`);
+      html.push('</tr>');
+
+      // Add Remarks row at the bottom: leave other columns empty and put remarks in the last column
+      const remarksVal = escapeHtml(document.getElementById('remarks-input') ? document.getElementById('remarks-input').value : '');
+      html.push('<tr>');
+      // Empty cells: (DESCRIPTION + line currents + line V + phase V + KVA) before REMARKS column
+      const _remptyCells = (circType === 'three_delta') ? 11 : 12;
+      for(let i=0;i<_remptyCells;i++) html.push('<td></td>');
+      html.push(`<td class="center">${remarksVal}</td>`);
+      html.push('</tr>');
+
+      html.push('</tbody></table>');
+      html.push('<div style="margin-top:8px;font-size:12px">Generated by Load Balancer Tool</div>');
+      // footer with all signatories
+      const conducted = escapeHtml(document.getElementById('conducted-by') ? document.getElementById('conducted-by').value : '');
+      const witness = escapeHtml(document.getElementById('witness-by') ? document.getElementById('witness-by').value : '');
+      const certifiedByVal = escapeHtml(document.getElementById('certified-by') ? document.getElementById('certified-by').value : '');
+      const witnessTenantVal = escapeHtml(document.getElementById('witness-tenant') ? document.getElementById('witness-tenant').value : '');
+      const printedAt = new Date().toLocaleString();
+      // Signature section
+      html.push('<div style="margin-top:24px;border-top:2px solid #333;padding-top:16px">');
+      html.push('<div style="font-size:13px;font-weight:700;margin-bottom:12px;text-transform:uppercase;letter-spacing:1px">Signatories</div>');
+      html.push('<div style="display:flex;gap:16px;justify-content:space-between;flex-wrap:wrap">');
+      // Conducted By
+      html.push('<div style="flex:1;min-width:180px">');
+      html.push('<div style="font-size:11px;color:#555;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Conducted By</div>');
+      html.push(`<div style="border-bottom:2px solid #000;padding:8px 4px;min-height:22px;font-size:14px;font-weight:600">${conducted}</div>`);
+      html.push('<div style="font-size:10px;color:#777;margin-top:2px">Electrician / Technician</div>');
+      html.push('</div>');
+      // Witnessed By (Mall Rep)
+      html.push('<div style="flex:1;min-width:180px">');
+      html.push('<div style="font-size:11px;color:#555;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Witnessed &amp; Verified By</div>');
+      html.push(`<div style="border-bottom:2px solid #000;padding:8px 4px;min-height:22px;font-size:14px;font-weight:600">${witness}</div>`);
+      html.push('<div style="font-size:10px;color:#777;margin-top:2px">Mall Administration Representative</div>');
+      html.push('</div>');
+      // Certified By
+      html.push('<div style="flex:1;min-width:180px">');
+      html.push('<div style="font-size:11px;color:#555;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Certified By</div>');
+      html.push(`<div style="border-bottom:2px solid #000;padding:8px 4px;min-height:22px;font-size:14px;font-weight:600">${certifiedByVal}</div>`);
+      html.push('<div style="font-size:10px;color:#777;margin-top:2px">Licensed Professional</div>');
+      html.push('</div>');
+      // Witnessed By (Tenant)
+      html.push('<div style="flex:1;min-width:180px">');
+      html.push('<div style="font-size:11px;color:#555;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Witnessed By</div>');
+      html.push(`<div style="border-bottom:2px solid #000;padding:8px 4px;min-height:22px;font-size:14px;font-weight:600">${witnessTenantVal}</div>`);
+      html.push('<div style="font-size:10px;color:#777;margin-top:2px">Tenant Representative</div>');
+      html.push('</div>');
+      html.push('</div>');
+      // Date/Time row
+      html.push(`<div style="margin-top:12px;text-align:right;font-size:11px;color:#555">Printed: ${escapeHtml(printedAt)}</div>`);
+      html.push('</div>');
+      // add a Print button instead of auto-print to avoid blocking/freeze in some browsers
+      html.push('<div style="margin-top:8px;text-align:right"><button id="printBtn" style="padding:8px 12px;font-size:13px">Print</button></div>');
+      html.push('<scr' + 'ipt>function initPrint(){ try{ const btn=document.getElementById("printBtn"); if(btn){ btn.addEventListener("click", ()=>{ try{ window.focus(); window.print(); }catch(e){ alert("Print failed: "+e); } } ); } window.focus(); }catch(e){} } window.onload=initPrint;</scr' + 'ipt>');
+      html.push('</body></html>');
+
+      // Open printable in a Blob URL to avoid blocking UI or popup-related freezes
+      try{
+        const content = html.join('');
+        const blob = new Blob([content], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const win = window.open(url, '_blank');
+        if(!win){
+          alert('Popup blocked - allow popups to open the printable form.');
+          URL.revokeObjectURL(url);
+          return;
+        }
+        // revoke URL after some time to free memory
+        setTimeout(()=>{ try{ URL.revokeObjectURL(url); }catch(e){} }, 30000);
+      }catch(e){
+        // fallback to document.write if blob/open fails
+        const win = window.open('about:blank','_blank');
+        if(!win){ alert('Popup blocked - allow popups to print the form.'); return; }
+        win.document.open(); win.document.write(html.join('')); win.document.close();
+      }
+
+      function escapeHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    }
+
+    // full load test calculations
+    function runFullLoadTest(){
+      // read values
+      const nameplate = parseFloat(document.getElementById('nameplate-power').value || '0');
+      const van = parseFloat(document.getElementById('meas-van').value || '0');
+      const vbn = parseFloat(document.getElementById('meas-vbn').value || '0');
+      const vcn = parseFloat(document.getElementById('meas-vcn').value || '0');
+      const ia = parseFloat(document.getElementById('meas-ia').value || '0');
+      const ib = parseFloat(document.getElementById('meas-ib').value || '0');
+      const ic = parseFloat(document.getElementById('meas-ic').value || '0');
+      const pfa = parseFloat(document.getElementById('pf-a').value || '1') || 1;
+      const pfb = parseFloat(document.getElementById('pf-b').value || '1') || 1;
+      const pfc = parseFloat(document.getElementById('pf-c').value || '1') || 1;
+      const t = circuitTypeEl.value;
+
+      // For three-phase line-to-line (delta or line-to-line): P = sqrt(3) * V_ll * I_line * PF
+      // For wye line-to-neutral measurements we use per-phase P = V_ph * I_ph * PF
+      let pa = 0, pb = 0, pc = 0;
+      if(t==='three_wye'){
+        pa = van * ia * pfa / 1000; pb = vbn * ib * pfb / 1000; pc = vcn * ic * pfc / 1000;
+      } else if(t==='three_delta' || t==='single_ll'){
+        // assume measured voltages are line-to-line; total P ~= sqrt(3)*Vll*Iline*PF distributed per phase equally approximation
+        const vll = Math.max(van||0, vbn||0, vcn||0);
+        const total = Math.SQRT3 * vll * Math.max(ia,ib,ic) * ((pfa+pfb+pfc)/3) / 1000;
+        // distributed proportionally to currents
+        const sumI = (ia+ib+ic) || 1;
+        pa = total * (ia/sumI); pb = total * (ib/sumI); pc = total * (ic/sumI);
+      } else if(t==='single_ln'){
+        // single phase measured on L1 only
+        pa = van * ia * pfa / 1000; pb=0; pc=0;
+      } else if(t==='single_llc'){
+        // single phase measured on L1 only
+        pa = van * ia * pfa / 1000; pb=0; pc=0;
+      }
+      const total = pa+pb+pc;
+      document.getElementById('res-pa').textContent = pa.toFixed(3) + ' kW';
+      document.getElementById('res-pb').textContent = pb.toFixed(3) + ' kW';
+      document.getElementById('res-pc').textContent = pc.toFixed(3) + ' kW';
+      document.getElementById('res-total').textContent = total.toFixed(3) + ' kW';
+      const pct = nameplate>0 ? (total / nameplate * 100) : 0;
+      document.getElementById('res-pct').textContent = pct.toFixed(1) + ' %';
+    }
+
+    // initialize app
+    init();
+
+    // ===== CLEAR FORM =====
+    function clearForm() {
+      if (!confirm('Clear all input fields on this form? This cannot be undone.')) return;
+
+      // Clear all text / number / date / time inputs (except hidden)
+      document.querySelectorAll(
+        'input[type=text], input[type=number], input[type=date], input[type=time], input[type=email], input[type=tel]'
+      ).forEach(el => { el.value = ''; });
+
+      // Reset all <select> elements to first option
+      document.querySelectorAll('select').forEach(el => { el.selectedIndex = 0; });
+
+      // Clear all textareas
+      document.querySelectorAll('textarea').forEach(el => { el.value = ''; });
+
+      // Uncheck checkboxes and radios
+      document.querySelectorAll('input[type=checkbox], input[type=radio]').forEach(el => { el.checked = false; });
+
+      // Clear the loads array and re-render
+      loads = [];
+      saveToStorage();
+      renderLoads();
+      computeSummary();
+
+      // Reset test result spans
+      ['res-pa','res-pb','res-pc','res-total','res-pct'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = id === 'res-pct' ? '0 %' : '0 kW';
+      });
+    }
+
+    document.getElementById('clear-form-btn').addEventListener('click', clearForm);
+
+    // compute summary periodically when storage or other pages change
+    window.addEventListener('storage', ()=>{ loads = loadFromStorage(); renderLoads(); computeSummary(); });
+  </script>
+  <script src="hangar-theme.js"></script>
+<script src="theme-loader.js"></script>
+</body>
+</html>

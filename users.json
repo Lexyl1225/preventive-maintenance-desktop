@@ -1,0 +1,101 @@
+[
+  {
+    "identifier": "solanopetemar2014@email.com",
+    "full_name": "Petemar Solano",
+    "role": "user",
+    "providers": "email",
+    "created": "2026-02-02",
+    "signed_in": "2026-02-02",
+    "user_uid": "f4wJCZDlKaboRkakxYhknTcbaWJ2"
+  },
+  {
+    "identifier": "solanopetemar2014@email.com",
+    "full_name": "Petemar Solano",
+    "role": "user",
+    "providers": "email",
+    "created": "2026-02-02",
+    "signed_in": "2026-02-02",
+    "user_uid": "frGQAbgyAoWvvRJjTQuhd4XCnBi1"
+  },
+  {
+    "identifier": "nerichris993@gmail.com",
+    "full_name": "Chris Neri",
+    "role": "user",
+    "providers": "email",
+    "created": "2026-01-29",
+    "signed_in": "2026-01-30",
+    "user_uid": "H3NpzdZjm0bvQLCEVQK9mcLECag2"
+  },
+  {
+    "identifier": "solanopetemar2014@gmail.com",
+    "full_name": "Petemar Solano",
+    "role": "user",
+    "providers": "email",
+    "created": "2026-01-27",
+    "signed_in": "2026-01-27",
+    "user_uid": "NuXsDBkxh2UlQcV7CVdOvliXodm1"
+  },
+  {
+    "identifier": "testminergate1225@gmail.com",
+    "full_name": "Test Minergate",
+    "role": "user",
+    "providers": "email",
+    "created": "2026-01-19",
+    "signed_in": "2026-02-21",
+    "user_uid": "88sqfFre5se5MWWZZCZCFgw39Kz1"
+  },
+  {
+    "identifier": "erpsvlog@gmail.com",
+    "full_name": "Joseph Cristal",
+    "role": "user",
+    "providers": "email",
+    "created": "2026-01-08",
+    "signed_in": "2026-02-20",
+    "user_uid": "GPC2UllHc9hr8FAqH2tXEuNBTU82"
+  },
+  {
+    "identifier": "jhonaust90@gmail.com",
+    "full_name": "Johnny Austria",
+    "role": "user",
+    "providers": "email",
+    "created": "2026-01-06",
+    "signed_in": "2026-01-08",
+    "user_uid": "RndLbF1uQcTvzbk1VzuFamVcAJl1"
+  },
+  {
+    "identifier": "eraps546@gmail.com",
+    "full_name": "Joseph Cristal",
+    "role": "user",
+    "providers": "email",
+    "created": "2026-01-06",
+    "signed_in": "2026-01-15",
+    "user_uid": "bEL0Zsn97mg8uetxoMKYQLb03aO2"
+  },
+  {
+    "identifier": "simon.jerico18@gmail.com",
+    "full_name": "Simon Jerico",
+    "role": "user",
+    "providers": "email",
+    "created": "2026-01-05",
+    "signed_in": "2026-02-18",
+    "user_uid": "XL0fsLbLM2fhxMTFFAkMZyW5eIu2"
+  },
+  {
+    "identifier": "alexander.fernandez@tomsworld.com.ph",
+    "full_name": "Alexander Fernandez",
+    "role": "admin",
+    "providers": "email",
+    "created": "2026-01-05",
+    "signed_in": "2026-02-21",
+    "user_uid": "X7f2PRIy7JgLogG4oIKAMwM9Ziz2"
+  },
+  {
+    "identifier": "mark.dejaresco@tomsworld.com.ph",
+    "full_name": "Mark Anthony Dejaresco",
+    "role": "admin",
+    "providers": "email",
+    "created": "2025-12-19",
+    "signed_in": "2026-02-12",
+    "user_uid": "cGsg82nEMpNUO0jozwdRg7pWz0c2"
+  }
+]

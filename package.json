@@ -1,0 +1,59 @@
+{
+  "name": "preventive-maintenance-desktop",
+  "version": "1.0.0",
+  "description": "Desktop application for Preventive Maintenance using the existing web app at https://preventive-maintenance.cloud",
+  "main": "main.js",
+  "homepage": "https://github.com/testminergate1225-beep/preventive-maintenance",
+  "author": {
+    "name": "Tom's World",
+    "email": "testminergate1225@gmail.com"
+  },
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder build --win --publish never",
+    "build:publish": "electron-builder build --win --publish always"
+  },
+  "build": {
+    "appId": "com.tomsworld.preventivemaintenance",
+    "productName": "Preventive Maintenance Desktop",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "icon.ico",
+      "icon/**/*",
+      "images/**/*",
+      "package.json"
+    ],
+    "asar": true,
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "deleteAppDataOnUninstall": false
+    },
+    "extraResources": [
+      "icon.ico",
+      "images/**/*"
+    ],
+    "publish": [
+      {
+        "provider": "generic",
+        "url": "https://github.com/testminergate1225-beep/preventive-maintenance/releases/latest/download"
+      }
+    ]
+  },
+  "devDependencies": {
+    "electron": "41.0.1",
+    "electron-builder": "26.8.1"
+  }
+}
