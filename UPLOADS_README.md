@@ -30,4 +30,4 @@ Security and production considerations:
 - Validate uploaded file types and sizes server-side (the project already checks common extensions).
 - Ensure the `uploads/` directory is not web-executable (store outside webroot or restrict execution via webserver config) and has appropriate permissions.
 
-If you'd like, I can update the repository README or add a short shell/powershell script to start the dev server with these flags.
+
