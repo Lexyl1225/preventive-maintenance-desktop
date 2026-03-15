@@ -5,10 +5,10 @@ services:
     image: mysql:8.0
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_ROOT_PASSWORD: your_rootpass
       MYSQL_DATABASE: pm_db1
       MYSQL_USER: pm_user
-      MYSQL_PASSWORD: '@L0lly122511'
+      MYSQL_PASSWORD: '@your_password'
     volumes:
       - db_data:/var/lib/mysql
     healthcheck:
@@ -28,7 +28,7 @@ services:
       DB_HOST: db
       DB_PORT: '3306'
       DB_USER: pm_user
-      DB_PASS: '@L0lly122511'
+      DB_PASS: '@your_password'
       DB_NAME: pm_db1
     depends_on:
       db:
