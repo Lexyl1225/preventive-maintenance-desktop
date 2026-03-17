@@ -40,9 +40,56 @@ function createWindow() {
   // Load your web app URL
   mainWindow.loadURL('https://preventive-maintenance.tomsworld.cloud');
 
+  // Small JS snippets to show/hide a toast inside the page
+  const SHOW_LOADING_TOAST_JS = `
+    (function(){
+      try{
+        var id = 'epm-loading-toast';
+        var el = document.getElementById(id);
+        if(!el){
+          el = document.createElement('div');
+          el.id = id;
+          Object.assign(el.style, {
+            position: 'fixed',
+            bottom: '20px',
+            right: '20px',
+            padding: '8px 12px',
+            background: 'rgba(0,0,0,0.75)',
+            color: '#fff',
+            borderRadius: '6px',
+            zIndex: 2147483647,
+            fontFamily: 'system-ui, -apple-system, Roboto, "Segoe UI", Arial, sans-serif',
+            fontSize: '13px',
+            opacity: '0',
+            transition: 'opacity 180ms ease'
+          });
+          el.textContent = 'Loading page';
+          document.documentElement.appendChild(el);
+          requestAnimationFrame(function(){ el.style.opacity = '1'; });
+        } else {
+          el.style.opacity = '1';
+        }
+        if(window.__epmLoadingToastTimeout) clearTimeout(window.__epmLoadingToastTimeout);
+        window.__epmLoadingToastTimeout = setTimeout(function(){ try{ var e=document.getElementById('epm-loading-toast'); if(e){ e.style.opacity='0'; setTimeout(function(){ e.remove(); },200); } }catch(e){} }, 10000);
+      }catch(e){}
+    })();
+  `;
+
+  const HIDE_LOADING_TOAST_JS = `
+    (function(){
+      try{
+        if(window.__epmLoadingToastTimeout){ clearTimeout(window.__epmLoadingToastTimeout); window.__epmLoadingToastTimeout = null; }
+        var el = document.getElementById('epm-loading-toast');
+        if(el){ el.style.opacity = '0'; setTimeout(function(){ try{ el.remove(); }catch(e){} }, 180); }
+      }catch(e){}
+    })();
+  `;
+
   // Handle network errors (only for main frame, not sub-resources)
   mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL, isMainFrame) => {
     if (isMainFrame) {
+      // hide any loading toast in case it is showing
+      mainWindow.webContents.executeJavaScript(HIDE_LOADING_TOAST_JS).catch(() => {});
       dialog.showMessageBox(mainWindow, {
         type: 'error',
         title: 'Connection Error',
@@ -90,7 +137,26 @@ function createWindow() {
     {
       label: 'Help',
       submenu: [
-        { label: 'About', click: () => dialog.showMessageBox(mainWindow, { icon: getResourcePath('icon.ico'), message: 'Preventive Maintenance Desktop App\nVersion 1.0' }) }
+        { label: 'About', click: () => dialog.showMessageBox(mainWindow, { icon: getResourcePath('icon.ico'), message: 'Preventive Maintenance Desktop App\nVersion 1.0.3' }) },
+        { type: 'separator' },
+        { label: 'How to use EPM', accelerator: 'CmdOrCtrl+G', click: () => mainWindow.loadURL('https://serverx.ratfish-regulus.ts.net/how-to-use-epm-system/') },
+        { type: 'separator' }
+      ]
+    },
+    {
+      label: 'Electrical Accomplishments',
+      submenu: [
+        { label: 'Open Reports', accelerator: 'CmdOrCtrl+R', click: () => mainWindow.loadURL('https://serverx.ratfish-regulus.ts.net') },
+        { type: 'separator' }
+
+      ]
+    },
+    {
+      label: 'BOM/BOQ System',
+      submenu: [
+        { label: 'Login', accelerator: 'CmdOrCtrl+B', click: () => mainWindow.loadURL('https://servery.ratfish-regulus.ts.net/bom/login.php') },
+        { type: 'separator' }
+
       ]
     },
     {
@@ -125,9 +191,38 @@ function createWindow() {
     return { action: 'deny' };
   });
 
-  // Also handle target="_blank" and window.open via deprecated new-window event
-  mainWindow.webContents.on('will-navigate', (event, url) => {
-    // Allow navigation within the same window (no action needed, it stays in mainWindow)
+  // Handle navigations — intercept PDF URLs so they render in the app
+  mainWindow.webContents.on('will-navigate', async (event, url) => {
+    try {
+      if (typeof url === 'string' && url.match(/\.pdf(\?|$)/i)) {
+        event.preventDefault();
+        const tempPath = path.join(app.getPath('temp'), `epm-pdf-${Date.now()}.pdf`);
+        const res = await net.fetch(url);
+        if (!res || !res.ok) {
+          throw new Error(`Network response ${res && res.status}`);
+        }
+        const arrayBuffer = await res.arrayBuffer();
+        fs.writeFileSync(tempPath, Buffer.from(arrayBuffer));
+        // Create a small HTML wrapper that embeds the PDF in an iframe.
+        // This prevents any site background images or styles from covering the PDF.
+        const wrapperPath = path.join(app.getPath('temp'), `epm-pdf-${Date.now()}.html`);
+        const pdfUrl = pathToFileURL(tempPath).toString();
+        const wrapperHtml = `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=edge" /><meta name="viewport" content="width=device-width,initial-scale=1" /><style>html,body,iframe{height:100%;width:100%;margin:0;background:#fff}body{background:#fff!important}iframe{border:0}</style></head><body><iframe src="${pdfUrl}" allowfullscreen></iframe></body></html>`;
+        fs.writeFileSync(wrapperPath, wrapperHtml, 'utf8');
+        await mainWindow.loadURL(pathToFileURL(wrapperPath).toString());
+        return;
+      }
+    } catch (err) {
+      console.error('Failed to display PDF inline:', err);
+      dialog.showMessageBox(mainWindow, {
+        type: 'info',
+        message: 'Opening PDF externally',
+        detail: `Could not display PDF inside the app: ${err && err.message ? err.message : err}`
+      }).then(() => {
+        shell.openExternal(url);
+      });
+    }
+    // otherwise allow normal navigation
   });
 
   // Fix print preview: use Electron's built-in print dialog (works for main + child windows)
@@ -141,6 +236,93 @@ function createWindow() {
   // Handle back navigation IPC from preload
   ipcMain.on('nav-back', () => { if (mainWindow.webContents.canGoBack()) mainWindow.webContents.goBack(); });
   ipcMain.on('nav-quit', () => app.quit());
+
+  // Domains where we want to remove any background images
+  const NO_BG_HOSTNAMES = new Set([
+    'serverx.ratfish-regulus.ts.net'
+  ]);
+
+  // When a page finishes loading, remove background images for matching hosts.
+  mainWindow.webContents.on('did-finish-load', async () => {
+    try {
+      const currentURL = mainWindow.webContents.getURL();
+      const hostname = new URL(currentURL).hostname;
+      if (NO_BG_HOSTNAMES.has(hostname)) {
+        // Strong CSS override to remove background images but preserve background colors
+        await mainWindow.webContents.insertCSS(`
+          html, body, * {
+            background-image: none !important;
+          }
+        `);
+
+        // Also clear inline styles that may set background images
+        await mainWindow.webContents.executeJavaScript(`
+          try {
+            Array.from(document.querySelectorAll('*')).forEach(el => {
+              if (el && el.style) {
+                el.style.backgroundImage = 'none';
+              }
+            });
+            if (document.documentElement) document.documentElement.style.backgroundImage = 'none';
+            if (document.body) document.body.style.backgroundImage = 'none';
+          } catch (e) {}
+        `, true);
+
+        // hide loading toast once finished
+        await mainWindow.webContents.executeJavaScript(HIDE_LOADING_TOAST_JS, true).catch(() => {});
+      }
+    } catch (e) {
+      // ignore malformed URLs or other errors
+    }
+  });
+
+  // Handle in-page navigation (single-page apps) as well
+  mainWindow.webContents.on('did-navigate-in-page', (event, url) => {
+    try {
+      const hostname = new URL(url).hostname;
+      if (NO_BG_HOSTNAMES.has(hostname)) {
+        mainWindow.webContents.insertCSS(`
+          html, body, * {
+            background-image: none !important;
+          }
+        `).catch(() => {});
+        mainWindow.webContents.executeJavaScript(`
+          try {
+            Array.from(document.querySelectorAll('*')).forEach(el => {
+              if (el && el.style) {
+                el.style.backgroundImage = 'none';
+              }
+            });
+            if (document.documentElement) document.documentElement.style.backgroundImage = 'none';
+            if (document.body) document.body.style.backgroundImage = 'none';
+          } catch (e) {}
+        `, true).catch(() => {});
+        // show toast for in-page navigation
+        mainWindow.webContents.executeJavaScript(SHOW_LOADING_TOAST_JS).catch(() => {});
+      }
+    } catch (e) {}
+  });
+
+  // Show toast when a top-level navigation starts
+  mainWindow.webContents.on('did-start-loading', () => {
+    try {
+      const currentURL = mainWindow.webContents.getURL();
+      const hostname = new URL(currentURL).hostname;
+      if (NO_BG_HOSTNAMES.has(hostname)) {
+        mainWindow.webContents.executeJavaScript(SHOW_LOADING_TOAST_JS).catch(() => {});
+      }
+    } catch (e) {}
+  });
+
+  // Also show toast for did-navigate (top-level navigations)
+  mainWindow.webContents.on('did-navigate', (event, url) => {
+    try {
+      const hostname = new URL(url).hostname;
+      if (NO_BG_HOSTNAMES.has(hostname)) {
+        mainWindow.webContents.executeJavaScript(SHOW_LOADING_TOAST_JS).catch(() => {});
+      }
+    } catch (e) {}
+  });
 }
 
 // Print current page as A4 PDF capturing all content, then open for printing
