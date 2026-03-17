@@ -56,9 +56,12 @@ For more information please visit : https://serverx.ratfish-regulus.ts.net/how-t
 
 ## Installation
 1. Clone the repo
-2. Setup instructions
-3. Configuration steps
-
+2. npm install
+3. npm start - to test
+4. npm run build - build the app
+5. see the build output in the root folder /dist/windows.appv1.0.0.exe
+6. Install on your Windows Machine
+   
 ## Usage
 Install the app in windows 10 or windows 11 Login in the desktop and your done
 
@@ -66,4 +69,4 @@ Install the app in windows 10 or windows 11 Login in the desktop and your done
 - PHP, Node.js
 
 ## License
-(MIT, Apache 2.0, etc.)
+(MIT, Apache 2.0)
