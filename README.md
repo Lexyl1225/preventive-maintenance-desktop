@@ -1,6 +1,6 @@
 # Preventive Maintenance Desktop App
 
-This is a windows application is for the preventive maintenance web apps. You can install it on your windows 10 and Windows 11, This apps automatically connects to the cloud database and for the users it is automatically authenticated using firebase realtime database. You can login as Admin or as a user here.
+This is a windows application for the preventive maintenance web apps. You can install it on your windows 10 and Windows 11, This apps automatically connects to the cloud database and for the users it is automatically authenticated using firebase realtime database. You can login as Admin or as a user here.
 Admin User has the privilege to delete files while the regular user has no privilege to delete any existing files.
 
 How to Create an account?
