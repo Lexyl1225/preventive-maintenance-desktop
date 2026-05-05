@@ -7,7 +7,7 @@ How to Create an account?
 1. On the login screen clicked on signup button
 2. Fill in your Full name, Email Address, Enter you desired Password and Confirm your password
 3. You need an existing users (Regular user or an Admin) to proceed with the account creation.
-4. Clicked Create Account and your account has been created you will be redirected to login screen
+4. Click Create Account and your account has been created you will be redirected to login screen
 5. Input your Account Email Address and your Password once authenticated you will be redirected to preventive maintenance landing page.
 6. You may now start encoding your preventive maintenance reports
 
