@@ -4,7 +4,7 @@ This is a windows application for the preventive maintenance web apps. You can i
 Admin User has the privilege to delete files while the regular user has no privilege to delete any existing files.
 
 How to Create an account?
-1. On the login screen clicked on signup button
+1. On the login screen click on signup button
 2. Fill in your Full name, Email Address, Enter you desired Password and Confirm your password
 3. You need an existing users (Regular user or an Admin) to proceed with the account creation.
 4. Click Create Account and your account has been created you will be redirected to login screen
